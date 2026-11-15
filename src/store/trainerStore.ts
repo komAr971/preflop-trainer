@@ -25,6 +25,8 @@ export interface AnswerResult {
 }
 
 interface TrainerState {
+  /** False until stored progress is loaded; UI waits for it so answers are never lost. */
+  ready: boolean
   repo: Repo | null
   chartId: number
   chart: Chart
@@ -86,6 +88,7 @@ function makeQuestion(
 const base = { chart: starter, rng: Math.random, borderlineShare: 0.7, reviews: [], counter: 0 }
 
 export const useTrainer = create<TrainerState>()((set, get) => ({
+  ready: false,
   repo: null,
   chartId: STARTER_ID,
   ...base,
@@ -123,7 +126,15 @@ export const useTrainer = create<TrainerState>()((set, get) => ({
 
   init: async (repo) => {
     set({ repo })
-    await get().selectChart(await repo.getActiveChartId())
+    try {
+      await get().selectChart(await repo.getActiveChartId())
+    } catch (e) {
+      // Storage unavailable (e.g. private mode): train without saving.
+      set({ repo: null })
+      throw e
+    } finally {
+      set({ ready: true })
+    }
   },
 
   selectChart: async (chartId) => {
@@ -149,6 +160,7 @@ export const useTrainer = create<TrainerState>()((set, get) => ({
   reset: (chart, rng = Math.random) => {
     const s = { ...get(), chart, rng, reviews: [], counter: 0 }
     set({
+      ready: true,
       repo: null,
       chartId: STARTER_ID,
       chart,

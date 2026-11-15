@@ -124,6 +124,13 @@ kbd {
   border: 1px solid var(--bad);
 }
 
+.footer {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
 /* ── table ── */
 .table {
   width: 100%;

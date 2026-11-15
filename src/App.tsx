@@ -22,13 +22,13 @@ function useSpotText(s: Scenario): string {
 
 export default function App() {
   const { t, i18n } = useTranslation()
-  const { question, answer, session, submit, next } = useTrainer()
+  const { ready, question, answer, session, submit, next } = useTrainer()
   const spotText = useSpotText(question.scenario)
 
   // Keyboard: F/C/R to answer, Space/Enter for next.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.ctrlKey || e.metaKey || e.altKey) return
+      if (!ready || e.ctrlKey || e.metaKey || e.altKey) return
       const key = e.key.toLowerCase()
       if (!answer) {
         const action = (Object.keys(HOTKEYS) as Action[]).find((a) => HOTKEYS[a] === key)
@@ -40,7 +40,7 @@ export default function App() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [answer, question, submit, next])
+  }, [ready, answer, question, submit, next])
 
   // Correct answers move on automatically.
   useEffect(() => {
@@ -73,24 +73,27 @@ export default function App() {
         </div>
       </header>
 
-      <main className="main">
-        <p className="spot-text" data-testid="spot-text">
-          <b>{question.scenario.spot.hero}</b> · {spotText}
-          {question.isReview && <span className="badge-review">{t('table.review')}</span>}
-        </p>
-        <Table scenario={question.scenario} cards={question.cards} questionId={question.id} />
-        <ActionBar
-          spot={question.scenario.spot}
-          options={question.scenario.actions}
-          disabled={answer !== null}
-          chosen={answer?.action}
-          accepted={answer?.accepted}
-          onAction={submit}
-        />
-        <div className="feedback-slot">
-          {answer && <Feedback answer={answer} hand={question.hand} freqs={question.freqs} onNext={next} />}
-        </div>
-      </main>
+      {ready && (
+        <main className="main">
+          <p className="spot-text" data-testid="spot-text">
+            <b>{question.scenario.spot.hero}</b> · {spotText}
+            {question.isReview && <span className="badge-review">{t('table.review')}</span>}
+          </p>
+          <Table scenario={question.scenario} cards={question.cards} questionId={question.id} />
+          <ActionBar
+            spot={question.scenario.spot}
+            options={question.scenario.actions}
+            disabled={answer !== null}
+            chosen={answer?.action}
+            accepted={answer?.accepted}
+            onAction={submit}
+          />
+          <div className="feedback-slot">
+            {answer && <Feedback answer={answer} hand={question.hand} freqs={question.freqs} onNext={next} />}
+          </div>
+        </main>
+      )}
+      <footer className="footer">v {__APP_VERSION__}</footer>
     </div>
   )
 }
