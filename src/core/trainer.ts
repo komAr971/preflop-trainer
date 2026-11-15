@@ -19,7 +19,7 @@ export const DEFAULT_THRESHOLD = 0.25
 export const DEFAULT_BORDERLINE_SHARE = 0.7
 const EPS = 1e-9
 
-function mainAction(freqs: Frequencies): Action {
+export function mainAction(freqs: Frequencies): Action {
   return ACTIONS.reduce((best, a) => (freqs[a] > freqs[best] ? a : best))
 }
 
@@ -41,16 +41,21 @@ export function isBorderline(spot: CompiledSpot, hand: Hand): boolean {
   const freqs = spot.hands.get(hand)!
   if (ACTIONS.every((a) => freqs[a] < 1)) return true
   const own = mainAction(freqs)
+  return neighbors(hand).some((n) => mainAction(spot.hands.get(n)!) !== own)
+}
+
+/** Grid neighbours: up/down/left/right; pairs also neighbour the next pairs (diagonal), e.g. QQ–JJ. */
+export function neighbors(hand: Hand): Hand[] {
   const { row, col } = gridPosition(hand)
   const steps = [[-1, 0], [1, 0], [0, -1], [0, 1]]
   if (row === col) steps.push([-1, -1], [1, 1])
+  const out: Hand[] = []
   for (const [dr, dc] of steps) {
     const r = row + dr
     const c = col + dc
-    if (r < 0 || r > 12 || c < 0 || c > 12) continue
-    if (mainAction(spot.hands.get(handAt(r, c))!) !== own) return true
+    if (r >= 0 && r <= 12 && c >= 0 && c <= 12) out.push(handAt(r, c))
   }
-  return false
+  return out
 }
 
 function weightedByCombos(hands: readonly Hand[], rng: Rng): Hand {

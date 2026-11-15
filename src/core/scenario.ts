@@ -40,6 +40,8 @@ export interface Scenario {
   heroOpenBb?: number
   /** Seats that limped (vsLimp), in action order. */
   limpers?: Position[]
+  /** Smallest legal raise-to amount (bet sizer minimum). */
+  minRaiseBb: number
 }
 
 export const STACK_BB = 100
@@ -167,5 +169,10 @@ export function buildScenario(compiled: CompiledSpot, sizings: Sizings, rng: Rng
   }
 
   const potBb = seats.reduce((sum, s) => sum + s.betBb, 0)
-  return { spot, seats, potBb, actions, facingBb, heroOpenBb, heroThreeBetBb, limpers }
+  // Min raise: the current bet plus the last raise increment (the BB counts as a 1bb bet).
+  const bets = [...new Set([0, 1, ...seats.map((s) => s.betBb)])].sort((a, b) => a - b)
+  const top = bets[bets.length - 1]
+  const prev = bets[bets.length - 2] ?? 0
+  const minRaiseBb = Math.min(STACK_BB, top + Math.max(1, top - prev))
+  return { spot, seats, potBb, actions, facingBb, heroOpenBb, heroThreeBetBb, limpers, minRaiseBb }
 }

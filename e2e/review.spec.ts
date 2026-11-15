@@ -9,8 +9,10 @@ const NEXT = /^(Дальше|Next)/
 /** Strategy line "… for AKo: …" → hand + spot text identify the question. */
 async function questionId(page: Page) {
   await expect(page.locator('[data-card]')).toHaveCount(2) // old cards leave during the deal animation
-  const spot = (await page.getByTestId('spot-text').innerText()).replace(/(Повтор ошибки|Mistake review)$/, '')
-  return spot + '|' + (await page.locator('[data-card]').evaluateAll((els) => els.map((e) => e.getAttribute('data-card')![0]).join('')))
+  // Spot key, not the text: limper seats are re-drawn when a hand comes back.
+  const spot = await page.getByTestId('spot-text').getAttribute('data-spot')
+  const ranks = await page.locator('[data-card]').evaluateAll((els) => els.map((e) => e.getAttribute('data-card')![0]).join(''))
+  return `${spot}|${ranks}`
 }
 
 test('a mistake comes back as the 3rd question with a review badge', async ({ page }, info) => {

@@ -6,6 +6,8 @@ interface Props {
   spot: CompiledSpot
   /** Called with hands touched by one stroke (pointer down → move → up). */
   onPaint?: (hands: Hand[]) => void
+  /** Outlined hand (mistake review). */
+  highlight?: Hand
 }
 
 const pct = (n: number) => `${Math.round(n * 1000) / 10}%`
@@ -17,7 +19,7 @@ function cellBackground(raise: number, call: number): string {
 }
 
 /** 13×13 hand grid; paint by click or drag (mouse and touch). */
-export function RangeGrid({ spot, onPaint }: Props) {
+export function RangeGrid({ spot, onPaint, highlight }: Props) {
   const painting = useRef(false)
   const touched = useRef(new Set<Hand>())
 
@@ -61,7 +63,7 @@ export function RangeGrid({ spot, onPaint }: Props) {
                 role="gridcell"
                 key={hand}
                 data-hand={hand}
-                className="range-cell"
+                className={`range-cell ${hand === highlight ? 'is-highlight' : ''}`}
                 style={{ background: cellBackground(f.raise, f.call) }}
                 title={`${hand}: raise ${pct(f.raise)}, call ${pct(f.call)}, fold ${pct(f.fold)}`}
               >

@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
-import { ACTIONS, type Frequencies, type Spot } from '../core/chart'
+import { ACTIONS, type CompiledSpot, type Frequencies, type Spot } from '../core/chart'
 import { rollIntervals } from '../core/trainer'
+import { MistakeWhy } from './MistakeWhy'
 import { useSizeRuleText } from './sizeRuleText'
 import type { Hand } from '../core/hands'
 import type { AnswerResult } from '../store/trainerStore'
@@ -11,10 +12,13 @@ interface Props {
   hand: Hand
   freqs: Frequencies
   spot: Spot
+  /** Spot chart, for the mistake explanation. */
+  compiled?: CompiledSpot
+  threshold?: number
   onNext: () => void
 }
 
-export function Feedback({ answer, hand, freqs, spot, onNext }: Props) {
+export function Feedback({ answer, hand, freqs, spot, compiled, threshold = 0.25, onNext }: Props) {
   const { t } = useTranslation()
   const name = useActionName()
   const ruleText = useSizeRuleText()
@@ -36,7 +40,7 @@ export function Feedback({ answer, hand, freqs, spot, onNext }: Props) {
           </span>
         )}
       </span>
-      {answer.size && (
+      {answer.size && answer.accepted.includes('raise') && (
         <span className={`feedback-size ${answer.size.ok ? 'ok' : 'bad'}`} data-testid="size-explain">
           {answer.size.ok
             ? t('size.ok', { entered: answer.size.entered })
@@ -47,6 +51,9 @@ export function Feedback({ answer, hand, freqs, spot, onNext }: Props) {
       <button type="button" className="next" onClick={onNext} autoFocus>
         {t('feedback.next')} <kbd>{t('feedback.nextHint')}</kbd>
       </button>
+      {!answer.correct && compiled && (
+        <MistakeWhy compiled={compiled} hand={hand} answer={answer} threshold={threshold} />
+      )}
     </div>
   )
 }

@@ -7,10 +7,8 @@ export const HOTKEYS: Record<Action, string> = { fold: 'f', call: 'c', raise: 'r
 
 export function useActionLabel() {
   const { t } = useTranslation()
-  /** `askSize`: the raise amount is hidden because the user has to enter it. */
-  return (spot: Spot, option: ActionOption, askSize = false): string => {
+  return (spot: Spot, option: ActionOption): string => {
     const amount = option.toBb !== undefined ? fmtBb(option.toBb) : ''
-    if (askSize && option.action === 'raise') return t(`actionAsk.${spot.kind}`)
     switch (option.action) {
       case 'fold':
         return t('action.fold')

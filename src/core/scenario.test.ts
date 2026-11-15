@@ -144,3 +144,12 @@ describe('raise size rules', () => {
     expect(rule({ kind: 'vs4bet', hero: 'BTN', villain: 'CO' })).toEqual({ kind: 'allIn', to: 100 })
   })
 })
+
+describe('min raise', () => {
+  it('is the current bet plus the last raise increment', () => {
+    expect(scenarioFor({ kind: 'rfi', hero: 'CO' }).minRaiseBb).toBe(2)
+    expect(scenarioFor({ kind: 'vsOpen', hero: 'BTN', villain: 'CO' }).minRaiseBb).toBe(4) // 2.5 + 1.5
+    expect(scenarioFor({ kind: 'vs3bet', hero: 'CO', villain: 'BTN' }).minRaiseBb).toBe(12.5) // 7.5 + 5
+    expect(scenarioFor({ kind: 'vsLimp', hero: 'BTN', limpers: 1 }).minRaiseBb).toBe(2)
+  })
+})

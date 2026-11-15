@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ActionBar } from './ActionBar'
-import { HOTKEYS, needsSize, useActionLabel } from './actionLabels'
-import { SizeEntry } from './SizeEntry'
+import { HOTKEYS, needsSize } from './actionLabels'
+import { BetSizer } from './BetSizer'
 import { Feedback } from './Feedback'
 import { Table } from './Table'
 import type { Action } from '../core/chart'
@@ -29,33 +29,34 @@ function useSpotText(s: Scenario): string {
 
 export function TrainerPage() {
   const { t } = useTranslation()
-  const { ready, question, answer, submit, next, settings } = useTrainer()
+  const { ready, question, answer, submit, next, settings, chart } = useTrainer()
   const pos = usePositionName()
   const sound = (kind: SoundKind) => {
     if (settings.sound && settings.soundKinds[kind]) playSound(kind, settings.volume)
   }
   const spotText = useSpotText(question.scenario)
-  const label = useActionLabel()
-  const [askingSize, setAskingSize] = useState(false)
   const raiseOption = question.scenario.actions.find((o) => o.action === 'raise')
   const raiseNeedsSize = raiseOption !== undefined && needsSize(raiseOption, settings.sizeInput)
+  const [raiseSize, setRaiseSize] = useState(question.scenario.minRaiseBb)
 
-  // A new hand closes the size prompt.
-  useEffect(() => setAskingSize(false), [question.id])
+  // Each new hand starts the bet sizer at the minimum raise, like a poker client.
+  useEffect(() => setRaiseSize(question.scenario.minRaiseBb), [question.id, question.scenario.minRaiseBb])
+
+  const act = useCallback(
+    (action: Action) => submit(action, action === 'raise' && raiseNeedsSize ? raiseSize : undefined),
+    [submit, raiseNeedsSize, raiseSize],
+  )
 
   // Keyboard: F/C/R to answer, Space/Enter for next.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (!ready || askingSize || e.ctrlKey || e.metaKey || e.altKey) return
+      if (!ready || e.ctrlKey || e.metaKey || e.altKey) return
       if (e.target instanceof HTMLInputElement) return
       const key = e.key.toLowerCase()
       if (!answer) {
         const action = (Object.keys(HOTKEYS) as Action[]).find((a) => HOTKEYS[a] === key)
         if (!action || !question.scenario.actions.some((o) => o.action === action)) return
-        if (action === 'raise' && raiseNeedsSize) {
-          e.preventDefault()
-          setAskingSize(true)
-        } else submit(action)
+        act(action)
       } else if (key === ' ' || key === 'enter') {
         e.preventDefault()
         next()
@@ -63,7 +64,7 @@ export function TrainerPage() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [ready, answer, question, submit, next, askingSize, raiseNeedsSize])
+  }, [ready, answer, question, next, act])
 
   // Sounds: deal (+ chips when facing a bet) on each new hand, result on answer.
   useEffect(() => {
@@ -92,7 +93,7 @@ export function TrainerPage() {
     <>
       {ready && (
         <main className="main">
-          <p className="spot-text" data-testid="spot-text">
+          <p className="spot-text" data-testid="spot-text" data-spot={question.spotKey}>
             <b>{pos(question.scenario.spot.hero)}</b> · {spotText}
             {question.isReview && <span className="badge-review">{t('table.review')}</span>}
             {settings.mixedMode === 'rng' && (
@@ -102,32 +103,34 @@ export function TrainerPage() {
             )}
           </p>
           <Table scenario={question.scenario} cards={question.cards} questionId={question.id} />
-          {askingSize && raiseOption ? (
-            <SizeEntry
-              label={label(question.scenario.spot, raiseOption, true)}
-              onCancel={() => setAskingSize(false)}
-              onSubmit={(size) => {
-                setAskingSize(false)
-                submit('raise', size)
-              }}
-            />
-          ) : (
-            <ActionBar
-              spot={question.scenario.spot}
-              options={question.scenario.actions}
+          {raiseNeedsSize && (
+            <BetSizer
+              min={question.scenario.minRaiseBb}
+              max={100}
+              value={raiseSize}
+              onChange={setRaiseSize}
+              onSubmit={() => act('raise')}
               disabled={answer !== null}
-              chosen={answer?.action}
-              accepted={answer?.accepted}
-              onAction={submit}
-              sizeInput={settings.sizeInput}
-              onAskSize={() => setAskingSize(true)}
             />
           )}
+          <ActionBar
+            spot={question.scenario.spot}
+            options={question.scenario.actions}
+            disabled={answer !== null}
+            chosen={answer?.action}
+            accepted={answer?.accepted}
+            onAction={act}
+            raiseSize={raiseNeedsSize ? raiseSize : undefined}
+          />
           <div className="trainer-links">
             <a href="#/draw">✏️ {t('draw.open')}</a>
           </div>
           <div className="feedback-slot">
-            {answer && <Feedback answer={answer} hand={question.hand} freqs={question.freqs} spot={question.scenario.spot} onNext={next} />}
+            {answer && <Feedback answer={answer} hand={question.hand} freqs={question.freqs} spot={question.scenario.spot}
+                compiled={chart.spots.get(question.spotKey)}
+                threshold={settings.threshold}
+                onNext={next}
+              />}
           </div>
         </main>
       )}

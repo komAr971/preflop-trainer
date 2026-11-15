@@ -77,7 +77,7 @@ describe('App', () => {
     act(() => useTrainer.getState().updateSettings({ middleName: 'MP' }))
   })
 
-  it('asks for the raise size and explains a wrong one', async () => {
+  it('raises to the size set in the bet sizer and explains a wrong size', async () => {
     const user = userEvent.setup()
     act(() => {
       for (let i = 0; i < 300; i++) {
@@ -87,19 +87,36 @@ describe('App', () => {
         useTrainer.getState().next()
       }
     })
-    const rule = useTrainer.getState().question.scenario.actions.find((o) => o.action === 'raise')!.rule!
-    render(<App />)
-    await user.click(screen.getByRole('button', { name: /…/ }))
-    await user.type(screen.getByRole('textbox', { name: 'Размер рейза' }), String(rule.to + 1))
-    await user.keyboard('{Enter}')
+    const q = useTrainer.getState().question
+    const rule = q.scenario.actions.find((o) => o.action === 'raise')!.rule!
+    const { container } = render(<App />)
+    expect(screen.getByRole('slider')).toHaveValue(String(q.scenario.minRaiseBb))
+    const input = screen.getByRole('textbox', { name: 'Размер рейза' })
+    await user.clear(input)
+    await user.type(input, String(rule.to + 1))
+    expect(container.querySelector('.action-raise')).toHaveTextContent(`${rule.to + 1}bb`)
+    await user.click(container.querySelector('.action-raise')!)
     expect(screen.getByRole('status')).toHaveTextContent('Ошибка')
     expect(screen.getByTestId('size-explain')).toHaveTextContent(`нужно ${rule.to}bb`)
+    expect(screen.getByTestId('why-reason')).toHaveTextContent('ошибка только в размере')
   })
 
-  it('raise button shows the amount when size input is off', () => {
+  it('explains a wrong action and shows the spot chart with the hand outlined', async () => {
+    const user = userEvent.setup()
+    const { container } = render(<App />)
+    const q = useTrainer.getState().question
+    const accepted = correctActions(q.freqs)
+    const wrong = q.scenario.actions.find((o) => !accepted.includes(o.action) && o.action !== 'raise')
+    if (!wrong) return
+    await user.click(container.querySelector(`.action-${wrong.action}`)!)
+    expect(screen.getByTestId('why-reason')).toHaveTextContent(q.hand)
+    expect(container.querySelector('.why .is-highlight')).toHaveAttribute('data-hand', q.hand)
+  })
+
+  it('hides the bet sizer when size input is off', () => {
     act(() => useTrainer.getState().updateSettings({ sizeInput: false }))
     render(<App />)
-    expect(screen.queryByRole('button', { name: /…/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('slider')).not.toBeInTheDocument()
     act(() => useTrainer.getState().updateSettings({ sizeInput: true }))
   })
 })

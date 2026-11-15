@@ -1,6 +1,6 @@
 import type { Action, Spot } from '../core/chart'
 import type { ActionOption } from '../core/scenario'
-import { HOTKEYS, needsSize, useActionLabel } from './actionLabels'
+import { HOTKEYS, useActionLabel } from './actionLabels'
 
 interface Props {
   spot: Spot
@@ -9,12 +9,11 @@ interface Props {
   chosen?: Action
   accepted?: Action[]
   onAction: (action: Action) => void
-  /** Raise asks for a size instead of answering immediately. */
-  sizeInput: boolean
-  onAskSize: () => void
+  /** Size chosen in the bet sizer (shown on the raise button), when sizes are entered. */
+  raiseSize?: number
 }
 
-export function ActionBar({ spot, options, disabled, chosen, accepted, onAction, sizeInput, onAskSize }: Props) {
+export function ActionBar({ spot, options, disabled, chosen, accepted, onAction, raiseSize }: Props) {
   const label = useActionLabel()
   return (
     <div className="action-bar">
@@ -32,9 +31,9 @@ export function ActionBar({ spot, options, disabled, chosen, accepted, onAction,
             type="button"
             className={`action action-${o.action} ${state}`}
             disabled={disabled}
-            onClick={() => (needsSize(o, sizeInput) ? onAskSize() : onAction(o.action))}
+            onClick={() => onAction(o.action)}
           >
-            {label(spot, o, needsSize(o, sizeInput))}
+            {label(spot, o.action === 'raise' && raiseSize !== undefined ? { ...o, toBb: raiseSize } : o)}
             <kbd>{HOTKEYS[o.action].toUpperCase()}</kbd>
           </button>
         )
