@@ -1,54 +1,90 @@
-# React + TypeScript + Vite
+# Preflop Trainer
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**Открыть приложение: https://komar971.github.io/preflop-trainer/**
 
-Currently, two official plugins are available:
+Тренажёр префлоп-чартов для безлимитного холдема (6-max, кэш, 100bb). Показывает раздачу на столе, ты выбираешь действие и размер рейза, приложение сверяет ответ с чартом и объясняет ошибки. Работает в браузере на телефоне и ПК, без регистрации и сервера, в том числе офлайн.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Возможности
 
-## Expanding the ESLint configuration
+- **Раздача на столе.** Позиции, ставки фишками, кнопка дилера, четырёхцветная колода. Кнопки «Фолд / Колл / Рейз» и клавиши F / C / R.
+- **Размер рейза как в покерном клиенте.** Ползунок от минимального рейза до 100bb и поле ввода. Верное действие с неверным размером засчитывается как ошибка.
+- **Разбор ошибки.** Почему ответ неверный, размеры диапазонов спота, граница диапазона рядом с рукой и сам чарт спота с обведённой рукой.
+- **62 спота:**
+  - первый вход (RFI);
+  - против опена, включая защиту ББ;
+  - против 3-бета;
+  - против 4-бета;
+  - против лимпа с одним, двумя или тремя и более лимперами.
+- **Пограничные руки выпадают чаще.** Повтор ошибок: ошибочная рука возвращается через 3, потом 10, потом 30 вопросов.
+- **Смешанные стратегии.** Верным считается любое действие с частотой не ниже порога (по умолчанию 25%) или режим рандомизатора 1–100.
+- **«Нарисуй чарт по памяти».** Закрашиваешь сетку 13×13 и сравниваешь с чартом.
+- **Статистика:**
+  - точность по спотам;
+  - отметка «выучено» (≥ 90% за 200 последних рук спота);
+  - тепловая карта ошибок;
+  - цель дня и серия дней.
+- **Свои чарты.** Редактор-сетка 13×13 с частотами, вставка строк диапазонов (`22+,A2s+,KTo+,AJo:0.5`), импорт и экспорт JSON.
+- **Интерфейс:** RU / EN, вторая позиция как MP или HJ, звуки (отключаются кнопкой 🔊 в шапке).
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Встроенные чарты
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+| Чарт | Описание |
+|---|---|
+| Базовый 6-max 100bb | Простой стартовый набор для NL2–NL10, все 62 спота |
+| Greenline 2026 — стандарт | Чарты со слайдов видео Greenline Poker [«ВЕСЬ ПРЕФЛОП ЗА 45 МИНУТ»](https://youtu.be/8tAPe4Uct-c) (тренер Нияз «Hotshot»): RFI, защита ББ, 3-беты, ответ на 4-бет, изолейты |
+| Greenline 2026 — RFI узко / широко | Сужение и расширение RFI из того же видео |
+
+Встроенные чарты только для чтения. Чтобы изменить чарт, сделай копию: «Чарты → Копировать → Редактировать». Как переписывались слайды и где они расходятся с подписями, описано в [docs/sources/greenline-2026.md](docs/sources/greenline-2026.md). Права на материалы Greenline принадлежат их автору.
+
+## Как пользоваться
+
+1. Открой https://komar971.github.io/preflop-trainer/
+2. **На телефоне:** меню браузера → «Добавить на главный экран». Приложение запускается как обычное и работает без интернета.
+3. Выбери чарт: ☰ → «Чарты» → «Тренировать».
+4. Отвечай на раздачи. Настройки (порог, рандомизатор, ввод размера, цель дня, звук, язык) в ☰ → «Настройки».
+
+Прогресс и свои чарты хранятся только в браузере на этом устройстве (IndexedDB). Чтобы перенести чарт на другое устройство, используй экспорт и импорт JSON.
+
+## Формат чарта (JSON)
+
+```json
+{
+  "version": 1,
+  "name": "Мой чарт",
+  "format": { "players": 6, "stackBb": 100 },
+  "sizings": { "openBb": 3, "sbOpenBb": 3, "threeBetIpX": 3, "threeBetOopX": 4, "fourBetX": 2.2, "isoIpBb": 4, "isoOopBb": 5 },
+  "spots": [
+    { "spot": { "kind": "rfi", "hero": "CO" }, "actions": { "raise": "22+,A2s+,K9s+,QTs+,JTs,ATo+,KJo+" } },
+    { "spot": { "kind": "vsOpen", "hero": "BB", "villain": "BTN" }, "actions": { "raise": "QQ+,AKs", "call": "JJ-22,AQs-A2s,KQo:0.5" } }
+  ]
+}
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+- **Позиции:** `UTG`, `HJ` (или `MP`), `CO`, `BTN`, `SB`, `BB`.
+- **Виды спотов:**
+  - `rfi`;
+  - `vsOpen` (villain — опенер);
+  - `vs3bet` (villain — тот, кто сделал 3-бет);
+  - `vs4bet` (villain — опенер, который сделал 4-бет);
+  - `vsLimp` (вместо villain поле `limpers`: 1, 2 или 3, где 3 означает «3 и больше»).
+- **Действия:** `raise` и `call` записываются строками диапазонов. Частота после двоеточия, без неё 100%. Фолд считается автоматически как остаток. У ББ против лимпа остаток — это чек.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Разработка
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
+Нужен Node.js 24.
+
+```bash
+npm install
+npm run dev        # локальный сервер
+npm test           # unit- и компонентные тесты (Vitest)
+npm run e2e        # e2e на ПК и телефоне (Playwright)
+npm run typecheck
+npm run lint
+npm run build
 ```
+
+Стек: TypeScript, React, Vite, Zustand, Dexie (IndexedDB), Zod, Motion, i18next, vite-plugin-pwa.
+
+Каждый push в `main` проходит CI: проверку типов, линтер, тесты и e2e. После этого сборка автоматически публикуется на GitHub Pages.
+
+План и принятые решения записаны в [docs/PLAN.md](docs/PLAN.md).
