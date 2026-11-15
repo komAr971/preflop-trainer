@@ -1,9 +1,11 @@
 import { create } from 'zustand'
 import { parseChart, type Action, type Chart, type Frequencies, type SpotKey } from '../core/chart'
 import type { Hand } from '../core/hands'
+import { dueItem, onAnswer, type ReviewItem } from '../core/review'
 import { buildScenario, type Scenario } from '../core/scenario'
 import { correctActions, dealCards, pickHand, type Card, type Rng } from '../core/trainer'
 import { starterChart } from '../data/starterChart'
+import { STARTER_ID, type Repo } from '../db/repo'
 
 export interface Question {
   id: number
@@ -12,6 +14,8 @@ export interface Question {
   cards: [Card, Card]
   scenario: Scenario
   freqs: Frequencies
+  /** Came from the mistakes queue. */
+  isReview: boolean
 }
 
 export interface AnswerResult {
@@ -21,30 +25,53 @@ export interface AnswerResult {
 }
 
 interface TrainerState {
+  repo: Repo | null
+  chartId: number
   chart: Chart
   rng: Rng
   threshold: number
   borderlineShare: number
+  /** Questions answered with this chart (drives the review queue). */
+  counter: number
+  reviews: ReviewItem[]
   question: Question
   answer: AnswerResult | null
   session: { total: number; correct: number }
   submit: (action: Action) => void
   next: () => void
-  /** For tests and future chart switching. */
+  /** Connects storage and loads the active chart with its progress. */
+  init: (repo: Repo) => Promise<void>
+  /** Switches training to another saved chart. */
+  selectChart: (chartId: number) => Promise<void>
+  /** In-memory reset (tests). */
   reset: (chart: Chart, rng?: Rng) => void
 }
 
-function loadStarter(): Chart {
-  const res = parseChart(starterChart)
-  if (!res.ok) throw new Error(`Starter chart is invalid:\n${res.errors.join('\n')}`)
+function compile(file: unknown): Chart {
+  const res = parseChart(file)
+  if (!res.ok) throw new Error(res.errors.join('\n'))
   return res.chart
 }
 
-function makeQuestion(chart: Chart, rng: Rng, borderlineShare: number, id: number): Question {
-  const keys = [...chart.spots.keys()]
-  const spotKey = keys[Math.floor(rng() * keys.length)]
+const starter = compile(starterChart)
+
+function makeQuestion(
+  s: Pick<TrainerState, 'chart' | 'rng' | 'borderlineShare' | 'reviews' | 'counter'>,
+  id: number,
+): Question {
+  const { chart, rng } = s
+  // The question being built will be answered as number counter + 1.
+  const due = dueItem(s.reviews, s.counter + 1)
+  let spotKey: SpotKey
+  let hand: Hand
+  if (due && chart.spots.has(due.spotKey)) {
+    ;({ spotKey, hand } = due)
+  } else {
+    const keys = [...chart.spots.keys()]
+    spotKey = keys[Math.floor(rng() * keys.length)]
+    hand = pickHand(chart.spots.get(spotKey)!, rng, s.borderlineShare)
+  }
   const spot = chart.spots.get(spotKey)!
-  const hand = pickHand(spot, rng, borderlineShare)
   return {
     id,
     spotKey,
@@ -52,41 +79,83 @@ function makeQuestion(chart: Chart, rng: Rng, borderlineShare: number, id: numbe
     cards: dealCards(hand, rng),
     scenario: buildScenario(spot, chart.sizings),
     freqs: spot.hands.get(hand)!,
+    isReview: due !== undefined && due.spotKey === spotKey && due.hand === hand,
   }
 }
 
-const initialChart = loadStarter()
+const base = { chart: starter, rng: Math.random, borderlineShare: 0.7, reviews: [], counter: 0 }
 
 export const useTrainer = create<TrainerState>()((set, get) => ({
-  chart: initialChart,
-  rng: Math.random,
+  repo: null,
+  chartId: STARTER_ID,
+  ...base,
   threshold: 0.25,
-  borderlineShare: 0.7,
-  question: makeQuestion(initialChart, Math.random, 0.7, 0),
+  question: makeQuestion(base, 0),
   answer: null,
   session: { total: 0, correct: 0 },
 
   submit: (action) => {
-    const { answer, question, threshold, session } = get()
+    const { answer, question, threshold, session, counter, reviews, repo, chartId } = get()
     if (answer) return
     const accepted = correctActions(question.freqs, threshold)
     const correct = accepted.includes(action)
+    const nextCounter = counter + 1
+    const nextReviews = onAnswer(reviews, question, correct, nextCounter)
     set({
       answer: { action, correct, accepted },
       session: { total: session.total + 1, correct: session.correct + (correct ? 1 : 0) },
+      counter: nextCounter,
+      reviews: nextReviews,
     })
+    repo
+      ?.recordAttempt(
+        { chartId, spotKey: question.spotKey, hand: question.hand, action, correct, ts: Date.now() },
+        nextReviews,
+        nextCounter,
+      )
+      .catch((e) => console.error('Failed to save attempt', e))
   },
 
   next: () => {
-    const { chart, rng, borderlineShare, question } = get()
-    set({ question: makeQuestion(chart, rng, borderlineShare, question.id + 1), answer: null })
+    const s = get()
+    set({ question: makeQuestion(s, s.question.id + 1), answer: null })
+  },
+
+  init: async (repo) => {
+    set({ repo })
+    await get().selectChart(await repo.getActiveChartId())
+  },
+
+  selectChart: async (chartId) => {
+    const { repo } = get()
+    if (!repo) return
+    let chart = starter
+    let id = STARTER_ID
+    try {
+      const file = await repo.getChart(chartId)
+      if (file) {
+        chart = compile(file)
+        id = chartId
+      }
+    } catch (e) {
+      console.error('Saved chart is invalid, falling back to starter', e)
+    }
+    const { reviews, counter } = await repo.loadProgress(id)
+    await repo.setActiveChartId(id)
+    const s = { ...get(), chart, reviews, counter }
+    set({ chartId: id, chart, reviews, counter, question: makeQuestion(s, get().question.id + 1), answer: null })
   },
 
   reset: (chart, rng = Math.random) => {
+    const s = { ...get(), chart, rng, reviews: [], counter: 0 }
     set({
+      repo: null,
+      chartId: STARTER_ID,
       chart,
       rng,
-      question: makeQuestion(chart, rng, get().borderlineShare, 0),
+      reviews: [],
+      counter: 0,
+      question: makeQuestion(s, 0),
       answer: null,
       session: { total: 0, correct: 0 },
     })

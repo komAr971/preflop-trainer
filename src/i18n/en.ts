@@ -12,6 +12,7 @@ export const en: Messages = {
     vs3bet: 'You opened {{open}}bb, {{villain}} 3-bet to {{amount}}bb',
   },
   table: {
+    review: 'Mistake review',
     pot: 'Pot: {{amount}}bb',
     you: 'You',
   },

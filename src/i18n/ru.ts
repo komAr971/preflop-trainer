@@ -10,6 +10,7 @@ export const ru = {
     vs3bet: 'Ты открыл {{open}}bb, {{villain}} сделал 3-бет до {{amount}}bb',
   },
   table: {
+    review: 'Повтор ошибки',
     pot: 'Банк: {{amount}}bb',
     you: 'Ты',
   },

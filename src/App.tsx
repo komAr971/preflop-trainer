@@ -76,6 +76,7 @@ export default function App() {
       <main className="main">
         <p className="spot-text" data-testid="spot-text">
           <b>{question.scenario.spot.hero}</b> · {spotText}
+          {question.isReview && <span className="badge-review">{t('table.review')}</span>}
         </p>
         <Table scenario={question.scenario} cards={question.cards} questionId={question.id} />
         <ActionBar

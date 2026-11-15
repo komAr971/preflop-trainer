@@ -114,6 +114,16 @@ kbd {
   margin: 16px 0 4px;
 }
 
+.badge-review {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  background: var(--bad-bg);
+  color: var(--bad);
+  border: 1px solid var(--bad);
+}
+
 /* ── table ── */
 .table {
   width: 100%;
