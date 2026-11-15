@@ -4,6 +4,7 @@ import { fmtBb } from '../core/format'
 import type { Scenario, SeatState } from '../core/scenario'
 import type { Card } from '../core/trainer'
 import { useMediaQuery } from '../ui/useMediaQuery'
+import { usePositionName } from './usePositionName'
 import { CARD_W } from './cardSize'
 import { PlayingCard } from './PlayingCard'
 import { LANDSCAPE, PORTRAIT, PORTRAIT_QUERY, heroCardsY, slotOf, type Layout } from './tableLayout'
@@ -15,6 +16,7 @@ function Seat({ seat, slot, layout }: { seat: SeatState; slot: number; layout: L
   const [x, y] = layout.slots[slot].seat
   const [w, h] = layout.seatSize
   const isHero = seat.status === 'hero'
+  const pos = usePositionName()
   return (
     <g
       className={`seat seat-${seat.status}`}
@@ -24,7 +26,7 @@ function Seat({ seat, slot, layout }: { seat: SeatState; slot: number; layout: L
     >
       <rect x={-w / 2} y={-h / 2} width={w} height={h} rx={h / 2} className="seat-box" />
       <text y={-4} textAnchor="middle" className="seat-pos">
-        {seat.position}
+        {pos(seat.position)}
         {isHero ? ` · ${t('table.you')}` : ''}
       </text>
       <text y={16} textAnchor="middle" className="seat-stack">

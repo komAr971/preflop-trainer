@@ -11,6 +11,7 @@ describe('settings', () => {
       dailyGoal: 100,
       sound: true,
       volume: 0.5,
+      middleName: 'MP',
       soundKinds: { deal: true, chip: true, correct: true, wrong: true },
     })
   })

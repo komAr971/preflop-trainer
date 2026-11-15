@@ -117,6 +117,8 @@ export const ru = {
   settings: {
     general: 'Общие',
     dailyGoal: 'Цель на день, раздач',
+    middleName: 'Название второй позиции',
+    middleNameHint: 'MP — как на GipsyTeam, HJ — как в GTO Wizard. Это одно и то же место.',
     training: 'Тренировка',
     threshold: 'Порог верного ответа в смешанной руке',
     thresholdHint: 'Действие с частотой не ниже порога засчитывается как верное',

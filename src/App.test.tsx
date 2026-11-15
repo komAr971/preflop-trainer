@@ -67,4 +67,13 @@ describe('App', () => {
     })
     expect(await screen.findByRole('button', { name: /^Fold/ })).toBeInTheDocument()
   })
+
+  it('shows MP by default and HJ when chosen in settings', async () => {
+    const { container } = render(<App />)
+    const seat = () => container.querySelector('[data-position="HJ"] .seat-pos')!.textContent
+    expect(seat()).toMatch(/^MP/)
+    act(() => useTrainer.getState().updateSettings({ middleName: 'HJ' }))
+    expect(seat()).toMatch(/^HJ/)
+    act(() => useTrainer.getState().updateSettings({ middleName: 'MP' }))
+  })
 })

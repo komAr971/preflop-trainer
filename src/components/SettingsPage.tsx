@@ -63,6 +63,22 @@ export function SettingsPage() {
             ))}
           </div>
         </div>
+        <div className="setting">
+          <span>{t('settings.middleName')}</span>
+          <div className="lang" role="group" aria-label={t('settings.middleName')}>
+            {(['MP', 'HJ'] as const).map((name) => (
+              <button
+                key={name}
+                type="button"
+                aria-pressed={settings.middleName === name}
+                onClick={() => update({ middleName: name })}
+              >
+                {name}
+              </button>
+            ))}
+          </div>
+          <small>{t('settings.middleNameHint')}</small>
+        </div>
         <label className="setting">
           <span>{t('settings.dailyGoal')}</span>
           {intInput('dailyGoal', 1, 5000)}

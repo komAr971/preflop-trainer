@@ -11,6 +11,8 @@ export const settingsSchema = z.object({
   dailyGoal: z.number().int().min(1).max(5000).default(100),
   sound: z.boolean().default(true),
   volume: z.number().min(0).max(1).default(0.5),
+  /** How the 2nd 6-max seat is shown: MP (Russian sources, GipsyTeam) or HJ (GTO Wizard). */
+  middleName: z.enum(['MP', 'HJ']).default('MP'),
   /** Individual sounds on/off. */
   soundKinds: z
     .object({ deal: z.boolean(), chip: z.boolean(), correct: z.boolean(), wrong: z.boolean() })

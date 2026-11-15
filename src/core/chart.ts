@@ -11,7 +11,15 @@ export const ACTIONS = ['fold', 'call', 'raise'] as const
 export type Action = (typeof ACTIONS)[number]
 type PlayableAction = Exclude<Action, 'fold'>
 
-const positionSchema = z.enum(POSITIONS)
+/** "MP" is accepted as an alias of "HJ" (the same 6-max seat) in imported files. */
+const positionSchema = z.preprocess((v) => (v === 'MP' ? 'HJ' : v), z.enum(POSITIONS))
+
+export type MiddleName = 'MP' | 'HJ'
+
+/** Display name of a position; the 2nd seat is shown as MP or HJ by preference. */
+export function positionName(p: Position, middle: MiddleName): string {
+  return p === 'HJ' ? middle : p
+}
 
 const spotSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('rfi'), hero: positionSchema }),

@@ -8,21 +8,24 @@ import type { Action } from '../core/chart'
 import { fmtBb } from '../core/format'
 import type { Scenario } from '../core/scenario'
 import { useTrainer } from '../store/trainerStore'
+import { usePositionName } from './usePositionName'
 import { playSound, type SoundKind } from '../ui/sound'
 
 const AUTO_NEXT_MS = 700
 
 function useSpotText(s: Scenario): string {
   const { t } = useTranslation()
+  const pos = usePositionName()
   const { spot } = s
   if (spot.kind === 'rfi') return t('spot.rfi')
-  if (spot.kind === 'vsOpen') return t('spot.vsOpen', { villain: spot.villain, amount: fmtBb(s.facingBb!) })
-  return t('spot.vs3bet', { villain: spot.villain, amount: fmtBb(s.facingBb!), open: fmtBb(s.heroOpenBb!) })
+  if (spot.kind === 'vsOpen') return t('spot.vsOpen', { villain: pos(spot.villain), amount: fmtBb(s.facingBb!) })
+  return t('spot.vs3bet', { villain: pos(spot.villain), amount: fmtBb(s.facingBb!), open: fmtBb(s.heroOpenBb!) })
 }
 
 export function TrainerPage() {
   const { t } = useTranslation()
   const { ready, question, answer, submit, next, settings } = useTrainer()
+  const pos = usePositionName()
   const sound = (kind: SoundKind) => {
     if (settings.sound && settings.soundKinds[kind]) playSound(kind, settings.volume)
   }
@@ -73,7 +76,7 @@ export function TrainerPage() {
       {ready && (
         <main className="main">
           <p className="spot-text" data-testid="spot-text">
-            <b>{question.scenario.spot.hero}</b> · {spotText}
+            <b>{pos(question.scenario.spot.hero)}</b> · {spotText}
             {question.isReview && <span className="badge-review">{t('table.review')}</span>}
           </p>
           <Table scenario={question.scenario} cards={question.cards} questionId={question.id} />

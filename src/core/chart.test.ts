@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseChart, parseChartJson, serializeChart, spotKey, type ChartFile } from './chart'
+import { parseChart, parseChartJson, positionName, serializeChart, spotKey, type ChartFile } from './chart'
 
 function file(spots: ChartFile['spots']): ChartFile {
   return {
@@ -110,5 +110,19 @@ describe('parseChartJson', () => {
     const res = parseChartJson('{ "version": 1,')
     expect(res.ok).toBe(false)
     if (!res.ok) expect(res.errors[0]).toMatch(/^JSON/)
+  })
+})
+
+describe('MP / HJ', () => {
+  it('imports MP as HJ', () => {
+    const res = parseChart(file([{ spot: { kind: 'vsOpen', hero: 'CO', villain: 'MP' as 'HJ' }, actions: { raise: 'AA' } }]))
+    if (!res.ok) throw new Error(res.errors.join())
+    expect([...res.chart.spots.keys()]).toEqual(['vsOpen:CO:HJ'])
+  })
+
+  it('shows the preferred name', () => {
+    expect(positionName('HJ', 'MP')).toBe('MP')
+    expect(positionName('HJ', 'HJ')).toBe('HJ')
+    expect(positionName('CO', 'MP')).toBe('CO')
   })
 })

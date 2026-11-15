@@ -119,6 +119,8 @@ export const en: Messages = {
   settings: {
     general: 'General',
     dailyGoal: 'Daily goal, hands',
+    middleName: 'Second seat name',
+    middleNameHint: 'MP as in many training sites, HJ as in GTO Wizard. Same seat.',
     training: 'Training',
     threshold: 'Correct-answer threshold for mixed hands',
     thresholdHint: 'An action at or above this frequency counts as correct',
