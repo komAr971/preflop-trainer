@@ -74,4 +74,11 @@ describe('Dexie repo', () => {
     await repo.saveSettings({ ...DEFAULT_SETTINGS, dailyGoal: 40 })
     expect((await repo.getSettings()).dailyGoal).toBe(40)
   })
+
+  it('stores drawing results per chart, oldest first', async () => {
+    await repo.recordDrawing({ chartId: 1, spotKey: 'rfi:CO', score: 90, ts: 2 })
+    await repo.recordDrawing({ chartId: 1, spotKey: 'rfi:CO', score: 80, ts: 1 })
+    await repo.recordDrawing({ chartId: 2, spotKey: 'rfi:CO', score: 70, ts: 3 })
+    expect((await repo.listDrawings(1)).map((d) => d.score)).toEqual([80, 90])
+  })
 })

@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { ChartEditor } from './components/ChartEditor'
 import { ChartsPage } from './components/ChartsPage'
+import { DrawPage } from './components/DrawPage'
 import { SettingsPage } from './components/SettingsPage'
 import { StatsPage } from './components/StatsPage'
 import { TrainerPage } from './components/TrainerPage'
@@ -8,7 +9,7 @@ import { useTrainer } from './store/trainerStore'
 import { hrefFor, useHashRoute, type Route } from './ui/useHashRoute'
 
 const TABS: { route: Route; label: string; matches: Route['page'][] }[] = [
-  { route: { page: 'train' }, label: 'nav.train', matches: ['train'] },
+  { route: { page: 'train' }, label: 'nav.train', matches: ['train', 'draw'] },
   { route: { page: 'charts' }, label: 'nav.charts', matches: ['charts', 'edit'] },
   { route: { page: 'stats' }, label: 'nav.stats', matches: ['stats'] },
   { route: { page: 'settings' }, label: 'nav.settings', matches: ['settings'] },
@@ -19,6 +20,7 @@ export default function App() {
   const route = useHashRoute()
   const session = useTrainer((s) => s.session)
   const soundOn = useTrainer((s) => s.settings.sound)
+  const chartId = useTrainer((s) => s.chartId)
   const updateSettings = useTrainer((s) => s.updateSettings)
   const percent = session.total ? Math.round((session.correct / session.total) * 100) : 0
 
@@ -58,6 +60,7 @@ export default function App() {
       {route.page === 'edit' && <ChartEditor key={route.chartId} chartId={route.chartId} />}
       {route.page === 'stats' && <StatsPage />}
       {route.page === 'settings' && <SettingsPage />}
+      {route.page === 'draw' && <DrawPage key={chartId} />}
 
       <footer className="footer">v {__APP_VERSION__}</footer>
     </div>

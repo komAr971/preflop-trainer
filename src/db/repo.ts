@@ -29,6 +29,15 @@ export interface ReviewRecord extends ReviewItem {
   chartId: number
 }
 
+export interface DrawingRecord {
+  id?: number
+  chartId: number
+  spotKey: SpotKey
+  /** Combo-weighted % correct. */
+  score: number
+  ts: number
+}
+
 interface MetaRecord {
   key: string
   value: unknown
@@ -39,6 +48,7 @@ export class TrainerDb extends Dexie {
   attempts!: EntityTable<AttemptRecord, 'id'>
   reviews!: Dexie.Table<ReviewRecord, [number, string, string]>
   meta!: EntityTable<MetaRecord, 'key'>
+  drawings!: EntityTable<DrawingRecord, 'id'>
 
   constructor(name = 'preflop-trainer') {
     super(name)
@@ -47,6 +57,9 @@ export class TrainerDb extends Dexie {
       attempts: '++id, chartId, [chartId+spotKey], ts',
       reviews: '[chartId+spotKey+hand], chartId',
       meta: 'key',
+    })
+    this.version(2).stores({
+      drawings: '++id, chartId, ts',
     })
   }
 }
@@ -73,6 +86,8 @@ export interface Repo {
   listAttempts(chartId: number): Promise<AttemptRecord[]>
   /** Timestamps of all attempts across charts (daily goal, streak). */
   attemptTimestamps(): Promise<number[]>
+  recordDrawing(drawing: Omit<DrawingRecord, 'id'>): Promise<void>
+  listDrawings(chartId: number): Promise<DrawingRecord[]>
   getSettings(): Promise<Settings>
   saveSettings(settings: Settings): Promise<void>
 }
@@ -104,8 +119,9 @@ export function createDexieRepo(db = new TrainerDb()): Repo {
 
     async deleteChart(id) {
       if (id === STARTER_ID) throw new Error('Built-in chart cannot be deleted')
-      await db.transaction('rw', [db.charts, db.attempts, db.reviews, db.meta], async () => {
+      await db.transaction('rw', [db.charts, db.attempts, db.reviews, db.meta, db.drawings], async () => {
         await db.charts.delete(id)
+        await db.drawings.where('chartId').equals(id).delete()
         await db.attempts.where('chartId').equals(id).delete()
         await db.reviews.where('chartId').equals(id).delete()
         await db.meta.delete(counterKey(id))
@@ -152,6 +168,14 @@ export function createDexieRepo(db = new TrainerDb()): Repo {
 
     async attemptTimestamps() {
       return (await db.attempts.orderBy('ts').keys()) as number[]
+    },
+
+    async recordDrawing(drawing) {
+      await db.drawings.add(drawing)
+    },
+
+    async listDrawings(chartId) {
+      return db.drawings.where('chartId').equals(chartId).sortBy('ts')
     },
 
     async getSettings() {

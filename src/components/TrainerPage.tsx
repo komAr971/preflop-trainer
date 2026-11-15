@@ -93,6 +93,9 @@ export function TrainerPage() {
             accepted={answer?.accepted}
             onAction={submit}
           />
+          <div className="trainer-links">
+            <a href="#/draw">✏️ {t('draw.open')}</a>
+          </div>
           <div className="feedback-slot">
             {answer && <Feedback answer={answer} hand={question.hand} freqs={question.freqs} onNext={next} />}
           </div>

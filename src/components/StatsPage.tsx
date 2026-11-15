@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import type { SpotKey } from '../core/chart'
 import { ALL_SPOTS } from '../core/chartEdit'
 import { handErrors, spotStats, streakDays, todayCount, type AttemptLike } from '../core/stats'
+import type { DrawingRecord } from '../db/repo'
 import { useTrainer } from '../store/trainerStore'
 import { HeatGrid } from './HeatGrid'
 import { useSpotLabel } from './spotLabel'
@@ -20,13 +21,17 @@ export function StatsPage() {
   const [attempts, setAttempts] = useState<AttemptLike[] | null>(null)
   const [timestamps, setTimestamps] = useState<number[]>([])
   const [heatSpot, setHeatSpot] = useState<SpotKey | ''>('')
+  const [drawings, setDrawings] = useState<DrawingRecord[]>([])
 
   useEffect(() => {
     if (!repo) return
-    void Promise.all([repo.listAttempts(chartId), repo.attemptTimestamps()]).then(([a, ts]) => {
-      setAttempts(a)
-      setTimestamps(ts)
-    })
+    void Promise.all([repo.listAttempts(chartId), repo.attemptTimestamps(), repo.listDrawings(chartId)]).then(
+      ([a, ts, d]) => {
+        setAttempts(a)
+        setTimestamps(ts)
+        setDrawings(d)
+      },
+    )
   }, [repo, chartId, sessionTotal])
 
   const rule = { window: settings.learnedWindow, threshold: settings.learnedThreshold }
@@ -121,6 +126,37 @@ export function StatsPage() {
           })}
         </tbody>
       </table>
+
+      {drawings.length > 0 && (
+        <>
+          <h2>{t('draw.stats')}</h2>
+          <table className="spot-table" data-testid="draw-stats">
+            <thead>
+              <tr className="muted">
+                <td />
+                <td className="num">{t('draw.last')}</td>
+                <td className="num">{t('draw.best')}</td>
+                <td className="num">{t('draw.attempts')}</td>
+              </tr>
+            </thead>
+            <tbody>
+              {spots
+                .filter((s) => drawings.some((d) => d.spotKey === s.key))
+                .map((s) => {
+                  const list = drawings.filter((d) => d.spotKey === s.key)
+                  return (
+                    <tr key={s.key}>
+                      <td>{spotLabel(s.spot)}</td>
+                      <td className="num">{list[list.length - 1].score.toFixed(1)}%</td>
+                      <td className="num">{Math.max(...list.map((d) => d.score)).toFixed(1)}%</td>
+                      <td className="num muted">{list.length}</td>
+                    </tr>
+                  )
+                })}
+            </tbody>
+          </table>
+        </>
+      )}
     </main>
   )
 }

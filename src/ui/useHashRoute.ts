@@ -6,6 +6,7 @@ export type Route =
   | { page: 'edit'; chartId: number }
   | { page: 'stats' }
   | { page: 'settings' }
+  | { page: 'draw' }
 
 export function parseHash(hash: string): Route {
   const parts = hash.replace(/^#\/?/, '').split('/')
@@ -15,6 +16,7 @@ export function parseHash(hash: string): Route {
   if (parts[0] === 'charts') return { page: 'charts' }
   if (parts[0] === 'stats') return { page: 'stats' }
   if (parts[0] === 'settings') return { page: 'settings' }
+  if (parts[0] === 'draw') return { page: 'draw' }
   return { page: 'train' }
 }
 
@@ -23,6 +25,7 @@ export function hrefFor(route: Route): string {
   if (route.page === 'edit') return `#/charts/${route.chartId}`
   if (route.page === 'stats') return '#/stats'
   if (route.page === 'settings') return '#/settings'
+  if (route.page === 'draw') return '#/draw'
   return '#/'
 }
 
