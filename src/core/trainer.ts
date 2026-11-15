@@ -126,3 +126,8 @@ export function actionForRoll(freqs: Frequencies, roll: number): Action {
 export function rollD100(rng: Rng): number {
   return 1 + Math.floor(rng() * 100)
 }
+
+/** True when the entered raise size is within `tolerance` bb of the expected one. */
+export function sizeMatches(entered: number, expected: number, tolerance = 0): boolean {
+  return Math.abs(entered - expected) <= tolerance + 1e-9
+}

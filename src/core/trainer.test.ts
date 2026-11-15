@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { parseChart, type CompiledSpot, type Frequencies } from './chart'
 import { ALL_HANDS, combosOf } from './hands'
-import { actionForRoll, correctActions, dealCards, isBorderline, isCorrect, mulberry32, pickHand, rollD100, rollIntervals } from './trainer'
+import { actionForRoll, correctActions, dealCards, isBorderline, isCorrect, mulberry32, pickHand, rollD100, rollIntervals, sizeMatches } from './trainer'
 
 const f = (fold: number, call: number, raise: number): Frequencies => ({ fold, call, raise })
 
@@ -140,5 +140,14 @@ describe('randomizer', () => {
     expect(Math.min(...seen)).toBe(1)
     expect(Math.max(...seen)).toBe(100)
     expect(seen.size).toBe(100)
+  })
+})
+
+describe('sizeMatches', () => {
+  it('is exact by default and accepts a tolerance', () => {
+    expect(sizeMatches(9, 9)).toBe(true)
+    expect(sizeMatches(8.5, 9)).toBe(false)
+    expect(sizeMatches(8.5, 9, 0.5)).toBe(true)
+    expect(sizeMatches(8, 9, 0.5)).toBe(false)
   })
 })

@@ -5,6 +5,10 @@ export const settingsSchema = z.object({
   threshold: z.number().min(0.05).max(1).default(0.25),
   /** Mixed hands: accept any action ≥ threshold, or only the action picked by a 1–100 roll. */
   mixedMode: z.enum(['threshold', 'rng']).default('threshold'),
+  /** Raise buttons ask for the size in bb; a wrong size counts as a mistake. */
+  sizeInput: z.boolean().default(true),
+  /** Allowed difference from the chart's raise size, bb. */
+  sizeTolerance: z.number().min(0).max(5).default(0),
   /** Share of questions drawn from borderline hands. */
   borderlineShare: z.number().min(0).max(1).default(0.7),
   /** A spot is learned when accuracy over the last `learnedWindow` hands ≥ `learnedThreshold`. */

@@ -103,6 +103,17 @@ export function SettingsPage() {
           </div>
           <small>{t(`settings.mixedModeHint.${settings.mixedMode}`)}</small>
         </div>
+        <label className="setting setting-inline">
+          <input type="checkbox" checked={settings.sizeInput} onChange={(e) => update({ sizeInput: e.target.checked })} />
+          <span>{t('settings.sizeInput')}</span>
+        </label>
+        {settings.sizeInput && (
+          <label className="setting">
+            <span>{t('settings.sizeTolerance')}</span>
+            <NumberField value={settings.sizeTolerance} min={0} max={5} step={0.5} onChange={(v) => update({ sizeTolerance: v })} />
+            <small>{t('settings.sizeToleranceHint')}</small>
+          </label>
+        )}
         {settings.mixedMode === 'threshold' && (
           <Percent
             label={t('settings.threshold')}

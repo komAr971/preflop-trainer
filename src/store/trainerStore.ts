@@ -2,8 +2,8 @@ import { create } from 'zustand'
 import { parseChart, type Action, type Chart, type Frequencies, type SpotKey } from '../core/chart'
 import type { Hand } from '../core/hands'
 import { dueItem, onAnswer, type ReviewItem } from '../core/review'
-import { buildScenario, type Scenario } from '../core/scenario'
-import { actionForRoll, correctActions, dealCards, pickHand, rollD100, type Card, type Rng } from '../core/trainer'
+import { buildScenario, type Scenario, type SizeRule } from '../core/scenario'
+import { actionForRoll, correctActions, dealCards, pickHand, rollD100, sizeMatches, type Card, type Rng } from '../core/trainer'
 import { DEFAULT_SETTINGS, type Settings } from '../core/settings'
 import { starterChart } from '../data/starterChart'
 import { STARTER_ID, type Repo } from '../db/repo'
@@ -27,6 +27,8 @@ export interface AnswerResult {
   accepted: Action[]
   /** The roll that decided the answer (rng mode). */
   roll?: number
+  /** Raise size check (when sizes are entered). */
+  size?: { entered: number; rule: SizeRule; ok: boolean }
 }
 
 interface TrainerState {
@@ -43,7 +45,8 @@ interface TrainerState {
   question: Question
   answer: AnswerResult | null
   session: { total: number; correct: number }
-  submit: (action: Action) => void
+  /** `sizeBb` — entered raise size, checked when size input is on. */
+  submit: (action: Action, sizeBb?: number) => void
   next: () => void
   /** Connects storage and loads the active chart with its progress. */
   init: (repo: Repo) => Promise<void>
@@ -102,18 +105,23 @@ export const useTrainer = create<TrainerState>()((set, get) => ({
   answer: null,
   session: { total: 0, correct: 0 },
 
-  submit: (action) => {
+  submit: (action, sizeBb) => {
     const { answer, question, settings, session, counter, reviews, repo, chartId } = get()
     if (answer) return
     const accepted =
       settings.mixedMode === 'rng'
         ? [actionForRoll(question.freqs, question.roll)]
         : correctActions(question.freqs, settings.threshold)
-    const correct = accepted.includes(action)
+    const rule = question.scenario.actions.find((o) => o.action === 'raise')?.rule
+    const size =
+      action === 'raise' && rule && sizeBb !== undefined
+        ? { entered: sizeBb, rule, ok: sizeMatches(sizeBb, rule.to, settings.sizeTolerance) }
+        : undefined
+    const correct = accepted.includes(action) && (size?.ok ?? true)
     const nextCounter = counter + 1
     const nextReviews = onAnswer(reviews, question, correct, nextCounter)
     set({
-      answer: { action, correct, accepted, roll: settings.mixedMode === 'rng' ? question.roll : undefined },
+      answer: { action, correct, accepted, roll: settings.mixedMode === 'rng' ? question.roll : undefined, size },
       session: { total: session.total + 1, correct: session.correct + (correct ? 1 : 0) },
       counter: nextCounter,
       reviews: nextReviews,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { parseChart, type Chart, type Spot } from './chart'
-import { buildScenario } from './scenario'
+import { buildScenario, type ActionOption } from './scenario'
 import { mulberry32 } from './trainer'
 
 const sizings = { openBb: 2.5, sbOpenBb: 3, threeBetIpX: 3, threeBetOopX: 4, fourBetX: 2.2 }
@@ -17,6 +17,8 @@ function scenarioFor(spot: Spot, actions?: { call?: string; raise?: string }) {
 }
 
 const seat = (s: ReturnType<typeof scenarioFor>, p: string) => s.seats.find((x) => x.position === p)!
+/** Actions without the size rule, for compact assertions. */
+const plain = (actions: ActionOption[]) => actions.map(({ action, toBb }) => (toBb === undefined ? { action } : { action, toBb }))
 
 describe('buildScenario: RFI', () => {
   it('CO open: earlier seats folded, blinds posted and waiting', () => {
@@ -28,12 +30,12 @@ describe('buildScenario: RFI', () => {
     expect(seat(s, 'SB')).toMatchObject({ status: 'waiting', betBb: 0.5 })
     expect(seat(s, 'BB')).toMatchObject({ status: 'waiting', betBb: 1 })
     expect(s.potBb).toBe(1.5)
-    expect(s.actions).toEqual([{ action: 'fold' }, { action: 'raise', toBb: 2.5 }])
+    expect(plain(s.actions)).toEqual([{ action: 'fold' }, { action: 'raise', toBb: 2.5 }])
   })
 
   it('SB open uses sbOpenBb and offers limp only if the chart limps', () => {
-    expect(scenarioFor({ kind: 'rfi', hero: 'SB' }).actions).toEqual([{ action: 'fold' }, { action: 'raise', toBb: 3 }])
-    expect(scenarioFor({ kind: 'rfi', hero: 'SB' }, { raise: 'AA', call: 'K9o' }).actions).toEqual([
+    expect(plain(scenarioFor({ kind: 'rfi', hero: 'SB' }).actions)).toEqual([{ action: 'fold' }, { action: 'raise', toBb: 3 }])
+    expect(plain(scenarioFor({ kind: 'rfi', hero: 'SB' }, { raise: 'AA', call: 'K9o' }).actions)).toEqual([
       { action: 'fold' },
       { action: 'call', toBb: 1 },
       { action: 'raise', toBb: 3 },
@@ -47,20 +49,20 @@ describe('buildScenario: vs open', () => {
     expect(seat(s, 'CO')).toMatchObject({ status: 'acted', betBb: 2.5 })
     expect(seat(s, 'UTG').status).toBe('folded')
     expect(s.potBb).toBe(4)
-    expect(s.actions).toEqual([{ action: 'fold' }, { action: 'call', toBb: 2.5 }, { action: 'raise', toBb: 7.5 }])
+    expect(plain(s.actions)).toEqual([{ action: 'fold' }, { action: 'call', toBb: 2.5 }, { action: 'raise', toBb: 7.5 }])
   })
 
   it('BB vs BTN open: 3-bet out of position, hero already has 1bb in', () => {
     const s = scenarioFor({ kind: 'vsOpen', hero: 'BB', villain: 'BTN' })
     expect(seat(s, 'BB')).toMatchObject({ status: 'hero', betBb: 1 })
     expect(seat(s, 'SB')).toMatchObject({ status: 'folded', betBb: 0.5 })
-    expect(s.actions).toEqual([{ action: 'fold' }, { action: 'call', toBb: 2.5 }, { action: 'raise', toBb: 10 }])
+    expect(plain(s.actions)).toEqual([{ action: 'fold' }, { action: 'call', toBb: 2.5 }, { action: 'raise', toBb: 10 }])
   })
 
   it('BB vs SB open: BB is in position postflop', () => {
     const s = scenarioFor({ kind: 'vsOpen', hero: 'BB', villain: 'SB' })
     expect(seat(s, 'SB').betBb).toBe(3)
-    expect(s.actions.at(-1)).toEqual({ action: 'raise', toBb: 9 })
+    expect(plain(s.actions).at(-1)).toEqual({ action: 'raise', toBb: 9 })
   })
 })
 
@@ -72,14 +74,14 @@ describe('buildScenario: vs 3-bet', () => {
     expect(seat(s, 'SB')).toMatchObject({ status: 'folded', betBb: 0.5 })
     expect(seat(s, 'BB')).toMatchObject({ status: 'folded', betBb: 1 })
     expect(s.potBb).toBe(11.5)
-    expect(s.actions).toEqual([{ action: 'fold' }, { action: 'call', toBb: 7.5 }, { action: 'raise', toBb: 16.5 }])
+    expect(plain(s.actions)).toEqual([{ action: 'fold' }, { action: 'call', toBb: 7.5 }, { action: 'raise', toBb: 16.5 }])
   })
 
   it('UTG open, BB 3-bets out of position', () => {
     const s = scenarioFor({ kind: 'vs3bet', hero: 'UTG', villain: 'BB' })
     expect(seat(s, 'BB').betBb).toBe(10)
     expect(seat(s, 'HJ').status).toBe('folded')
-    expect(s.actions.at(-1)).toEqual({ action: 'raise', toBb: 22 })
+    expect(plain(s.actions).at(-1)).toEqual({ action: 'raise', toBb: 22 })
   })
 })
 
@@ -90,7 +92,7 @@ describe('buildScenario: vs 4-bet', () => {
     expect(seat(s, 'CO')).toMatchObject({ status: 'acted', betBb: 16.5 })
     expect(seat(s, 'BB')).toMatchObject({ status: 'folded', betBb: 1 })
     expect(s.heroThreeBetBb).toBe(7.5)
-    expect(s.actions).toEqual([{ action: 'fold' }, { action: 'call', toBb: 16.5 }, { action: 'raise', toBb: 100 }])
+    expect(plain(s.actions)).toEqual([{ action: 'fold' }, { action: 'call', toBb: 16.5 }, { action: 'raise', toBb: 100 }])
   })
 
   it('BB 3-bets out of position (4x), then faces the 4-bet', () => {
@@ -115,7 +117,7 @@ describe('buildScenario: vs limp', () => {
         expect(seat(s, p)).toMatchObject({ status: 'acted', betBb: 1 })
       }
       // iso in position: 4bb + 1bb for the extra limper
-      expect(s.actions).toEqual([{ action: 'fold' }, { action: 'call', toBb: 1 }, { action: 'raise', toBb: 5 }])
+      expect(plain(s.actions)).toEqual([{ action: 'fold' }, { action: 'call', toBb: 1 }, { action: 'raise', toBb: 5 }])
     }
   })
 
@@ -127,6 +129,18 @@ describe('buildScenario: vs limp', () => {
 
   it('BB can check or raise (no fold), iso out of position', () => {
     const s = limpScenario({ kind: 'vsLimp', hero: 'BB', limpers: 1 }, 1)
-    expect(s.actions).toEqual([{ action: 'call', toBb: 1 }, { action: 'raise', toBb: 5 }])
+    expect(plain(s.actions)).toEqual([{ action: 'call', toBb: 1 }, { action: 'raise', toBb: 5 }])
+  })
+})
+
+
+describe('raise size rules', () => {
+  const rule = (spot: Spot) => scenarioFor(spot).actions.find((a) => a.action === 'raise')!.rule
+  it('explains how each raise size is derived', () => {
+    expect(rule({ kind: 'rfi', hero: 'CO' })).toEqual({ kind: 'open', to: 2.5 })
+    expect(rule({ kind: 'vsOpen', hero: 'BTN', villain: 'CO' })).toEqual({ kind: 'threeBet', ip: true, base: 2.5, mult: 3, to: 7.5 })
+    expect(rule({ kind: 'vsOpen', hero: 'BB', villain: 'BTN' })).toMatchObject({ ip: false, mult: 4, to: 10 })
+    expect(rule({ kind: 'vs3bet', hero: 'CO', villain: 'BTN' })).toEqual({ kind: 'fourBet', base: 7.5, mult: 2.2, to: 16.5 })
+    expect(rule({ kind: 'vs4bet', hero: 'BTN', villain: 'CO' })).toEqual({ kind: 'allIn', to: 100 })
   })
 })

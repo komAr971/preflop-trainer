@@ -80,4 +80,18 @@ describe('trainer store', () => {
     }
     store().updateSettings({ mixedMode: 'threshold' })
   })
+
+  it('a correct raise with a wrong size is a mistake', () => {
+    // find a question where raise is correct
+    for (let i = 0; i < 200 && !correctActions(store().question.freqs).includes('raise'); i++) store().next()
+    const q = store().question
+    const rule = q.scenario.actions.find((o) => o.action === 'raise')!.rule!
+    store().submit('raise', rule.to + 1)
+    expect(store().answer).toMatchObject({ correct: false, size: { ok: false, entered: rule.to + 1 } })
+    store().next()
+    for (let i = 0; i < 200 && !correctActions(store().question.freqs).includes('raise'); i++) store().next()
+    const q2 = store().question
+    store().submit('raise', q2.scenario.actions.find((o) => o.action === 'raise')!.rule!.to)
+    expect(store().answer).toMatchObject({ correct: true, size: { ok: true } })
+  })
 })

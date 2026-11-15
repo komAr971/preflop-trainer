@@ -7,8 +7,10 @@ export const HOTKEYS: Record<Action, string> = { fold: 'f', call: 'c', raise: 'r
 
 export function useActionLabel() {
   const { t } = useTranslation()
-  return (spot: Spot, option: ActionOption): string => {
+  /** `askSize`: the raise amount is hidden because the user has to enter it. */
+  return (spot: Spot, option: ActionOption, askSize = false): string => {
     const amount = option.toBb !== undefined ? fmtBb(option.toBb) : ''
+    if (askSize && option.action === 'raise') return t(`actionAsk.${spot.kind}`)
     switch (option.action) {
       case 'fold':
         return t('action.fold')
@@ -32,4 +34,9 @@ export function useActionName() {
   const { t } = useTranslation()
   return (spot: Spot, action: Action): string =>
     bbChecks(spot) && action === 'call' ? t('actionName.check') : t(`actionName.${action}`)
+}
+
+/** Raise size must be typed in (size input on, not an all-in). */
+export function needsSize(option: ActionOption, sizeInput: boolean): boolean {
+  return sizeInput && option.action === 'raise' && option.rule !== undefined && option.rule.kind !== 'allIn'
 }

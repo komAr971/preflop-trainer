@@ -10,10 +10,20 @@ export interface SeatState {
   betBb: number
 }
 
+/** How the raise size is derived — shown when the user enters a wrong size. */
+export type SizeRule =
+  | { kind: 'open'; to: number }
+  | { kind: 'threeBet'; ip: boolean; base: number; mult: number; to: number }
+  | { kind: 'fourBet'; base: number; mult: number; to: number }
+  | { kind: 'iso'; ip: boolean; base: number; extraLimpers: number; to: number }
+  | { kind: 'allIn'; to: number }
+
 export interface ActionOption {
   action: Action
   /** Total bet after the action (call/raise). */
   toBb?: number
+  /** Raise only. */
+  rule?: SizeRule
 }
 
 export interface Scenario {
@@ -47,6 +57,10 @@ function threeBetSize(threeBettor: Position, opener: Position, open: number, s: 
   return roundHalf(open * (isInPosition(threeBettor, opener) ? s.threeBetIpX : s.threeBetOopX))
 }
 
+function raiseOption(rule: SizeRule): ActionOption {
+  return { action: 'raise', toBb: rule.to, rule }
+}
+
 /** `rng` picks limper seats in vsLimp spots. */
 export function buildScenario(compiled: CompiledSpot, sizings: Sizings, rng: Rng = Math.random): Scenario {
   const { spot } = compiled
@@ -68,7 +82,7 @@ export function buildScenario(compiled: CompiledSpot, sizings: Sizings, rng: Rng
       actions = [
         { action: 'fold' },
         ...(canLimp ? [{ action: 'call' as const, toBb: 1 }] : []),
-        { action: 'raise', toBb: openSize(hero, sizings) },
+        raiseOption({ kind: 'open', to: openSize(hero, sizings) }),
       ]
       break
     }
@@ -81,7 +95,13 @@ export function buildScenario(compiled: CompiledSpot, sizings: Sizings, rng: Rng
       actions = [
         { action: 'fold' },
         { action: 'call', toBb: open },
-        { action: 'raise', toBb: threeBetSize(hero, spot.villain, open, sizings) },
+        raiseOption({
+          kind: 'threeBet',
+          ip: isInPosition(hero, spot.villain),
+          base: open,
+          mult: isInPosition(hero, spot.villain) ? sizings.threeBetIpX : sizings.threeBetOopX,
+          to: threeBetSize(hero, spot.villain, open, sizings),
+        }),
       ]
       break
     }
@@ -96,7 +116,7 @@ export function buildScenario(compiled: CompiledSpot, sizings: Sizings, rng: Rng
       actions = [
         { action: 'fold' },
         { action: 'call', toBb: threeBet },
-        { action: 'raise', toBb: roundHalf(threeBet * sizings.fourBetX) },
+        raiseOption({ kind: 'fourBet', base: threeBet, mult: sizings.fourBetX, to: roundHalf(threeBet * sizings.fourBetX) }),
       ]
       break
     }
@@ -113,7 +133,7 @@ export function buildScenario(compiled: CompiledSpot, sizings: Sizings, rng: Rng
         { action: 'fold' },
         { action: 'call', toBb: fourBet },
         // 5-bet = all-in at 100bb.
-        { action: 'raise', toBb: STACK_BB },
+        raiseOption({ kind: 'allIn', to: STACK_BB }),
       ]
       break
     }
@@ -131,12 +151,17 @@ export function buildScenario(compiled: CompiledSpot, sizings: Sizings, rng: Rng
       }
       for (const s of seats) if (preIdx(s.position) > preIdx(hero)) s.status = 'waiting'
       const inPosition = hero !== 'SB' && hero !== 'BB'
-      const iso = (inPosition ? sizings.isoIpBb : sizings.isoOopBb) + (limpers.length - 1)
+      const isoBase = inPosition ? sizings.isoIpBb : sizings.isoOopBb
+      const iso = raiseOption({
+        kind: 'iso',
+        ip: inPosition,
+        base: isoBase,
+        extraLimpers: limpers.length - 1,
+        to: isoBase + (limpers.length - 1),
+      })
       facingBb = 1
       actions =
-        hero === 'BB'
-          ? [{ action: 'call', toBb: 1 }, { action: 'raise', toBb: iso }]
-          : [{ action: 'fold' }, { action: 'call', toBb: 1 }, { action: 'raise', toBb: iso }]
+        hero === 'BB' ? [{ action: 'call', toBb: 1 }, iso] : [{ action: 'fold' }, { action: 'call', toBb: 1 }, iso]
       break
     }
   }

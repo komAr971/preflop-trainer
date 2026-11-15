@@ -76,4 +76,30 @@ describe('App', () => {
     expect(seat()).toMatch(/^HJ/)
     act(() => useTrainer.getState().updateSettings({ middleName: 'MP' }))
   })
+
+  it('asks for the raise size and explains a wrong one', async () => {
+    const user = userEvent.setup()
+    act(() => {
+      for (let i = 0; i < 300; i++) {
+        const q = useTrainer.getState().question
+        const rule = q.scenario.actions.find((o) => o.action === 'raise')?.rule
+        if (correctActions(q.freqs).includes('raise') && rule && rule.kind !== 'allIn') break
+        useTrainer.getState().next()
+      }
+    })
+    const rule = useTrainer.getState().question.scenario.actions.find((o) => o.action === 'raise')!.rule!
+    render(<App />)
+    await user.click(screen.getByRole('button', { name: /…/ }))
+    await user.type(screen.getByRole('textbox', { name: 'Размер рейза' }), String(rule.to + 1))
+    await user.keyboard('{Enter}')
+    expect(screen.getByRole('status')).toHaveTextContent('Ошибка')
+    expect(screen.getByTestId('size-explain')).toHaveTextContent(`нужно ${rule.to}bb`)
+  })
+
+  it('raise button shows the amount when size input is off', () => {
+    act(() => useTrainer.getState().updateSettings({ sizeInput: false }))
+    render(<App />)
+    expect(screen.queryByRole('button', { name: /…/ })).not.toBeInTheDocument()
+    act(() => useTrainer.getState().updateSettings({ sizeInput: true }))
+  })
 })
