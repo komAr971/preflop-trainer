@@ -6,7 +6,7 @@ function file(spots: ChartFile['spots']): ChartFile {
     version: 1,
     name: 'Test',
     format: { players: 6, stackBb: 100 },
-    sizings: { openBb: 2.5, sbOpenBb: 3, threeBetIpX: 3, threeBetOopX: 4, fourBetX: 2.2 },
+    sizings: { openBb: 2.5, sbOpenBb: 3, threeBetIpX: 3, threeBetOopX: 4, fourBetX: 2.2, isoIpBb: 4, isoOopBb: 5 },
     spots,
   }
 }
@@ -133,5 +133,31 @@ describe('vs4bet rules', () => {
     expect(errorsOf(file([{ spot: { kind: 'vs4bet', hero: 'CO', villain: 'BTN' }, actions: { raise: 'AA' } }])).join()).toMatch(
       /vs4bet:CO:BTN/,
     )
+  })
+})
+
+describe('vsLimp rules', () => {
+  it('needs enough seats before hero', () => {
+    expect(parseChart(file([{ spot: { kind: 'vsLimp', hero: 'CO', limpers: 2 }, actions: { raise: 'AA' } }])).ok).toBe(true)
+    expect(errorsOf(file([{ spot: { kind: 'vsLimp', hero: 'HJ', limpers: 2 }, actions: { raise: 'AA' } }])).join()).toMatch(
+      /vsLimp:HJ:2/,
+    )
+  })
+
+  it('BB facing limps checks instead of folding', () => {
+    const res = parseChart(file([{ spot: { kind: 'vsLimp', hero: 'BB', limpers: 1 }, actions: { raise: 'AA' } }]))
+    if (!res.ok) throw new Error(res.errors.join())
+    const hands = res.chart.spots.get('vsLimp:BB:1')!.hands
+    expect(hands.get('72o')).toEqual({ fold: 0, call: 1, raise: 0 })
+    expect(hands.get('AA')).toEqual({ fold: 0, call: 0, raise: 1 })
+  })
+
+  it('older files without iso sizings get defaults', () => {
+    const { isoIpBb, isoOopBb, ...old } = file([]).sizings
+    void isoIpBb
+    void isoOopBb
+    const res = parseChart({ ...file([{ spot: { kind: 'rfi', hero: 'CO' }, actions: { raise: 'AA' } }]), sizings: old })
+    if (!res.ok) throw new Error(res.errors.join())
+    expect(res.chart.sizings).toMatchObject({ isoIpBb: 4, isoOopBb: 5 })
   })
 })

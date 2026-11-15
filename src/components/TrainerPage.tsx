@@ -19,6 +19,7 @@ function useSpotText(s: Scenario): string {
   const { spot } = s
   if (spot.kind === 'rfi') return t('spot.rfi')
   if (spot.kind === 'vsOpen') return t('spot.vsOpen', { villain: pos(spot.villain), amount: fmtBb(s.facingBb!) })
+  if (spot.kind === 'vsLimp') return t('spot.vsLimp', { limpers: s.limpers!.map(pos).join(', '), count: s.limpers!.length })
   if (spot.kind === 'vs4bet') {
     return t('spot.vs4bet', { villain: pos(spot.villain), amount: fmtBb(s.facingBb!), threeBet: fmtBb(s.heroThreeBetBb!) })
   }
@@ -100,7 +101,7 @@ export function TrainerPage() {
             <a href="#/draw">✏️ {t('draw.open')}</a>
           </div>
           <div className="feedback-slot">
-            {answer && <Feedback answer={answer} hand={question.hand} freqs={question.freqs} onNext={next} />}
+            {answer && <Feedback answer={answer} hand={question.hand} freqs={question.freqs} spot={question.scenario.spot} onNext={next} />}
           </div>
         </main>
       )}

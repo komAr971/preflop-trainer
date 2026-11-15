@@ -84,7 +84,7 @@ function makeQuestion(
     spotKey,
     hand,
     cards: dealCards(hand, rng),
-    scenario: buildScenario(spot, chart.sizings),
+    scenario: buildScenario(spot, chart.sizings, rng),
     freqs: spot.hands.get(hand)!,
     isReview: due !== undefined && due.spotKey === spotKey && due.hand === hand,
     roll: rollD100(rng),

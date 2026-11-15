@@ -8,11 +8,13 @@ import { useTrainer } from '../store/trainerStore'
 import { navigate } from '../ui/useHashRoute'
 import { DiffGrid } from './DiffGrid'
 import { RangeGrid } from './RangeGrid'
+import { useActionName } from './actionLabels'
 import { useSpotLabel } from './spotLabel'
 
 export function DrawPage() {
   const { t } = useTranslation()
   const spotLabel = useSpotLabel()
+  const name = useActionName()
   const chart = useTrainer((s) => s.chart)
   const chartId = useTrainer((s) => s.chartId)
   const repo = useTrainer((s) => s.repo)
@@ -83,7 +85,7 @@ export function DrawPage() {
                   className={`brush brush-${a}`}
                   onClick={() => setBrush(a)}
                 >
-                  {t(`actionName.${a}`)}
+                  {name(target.spot, a)}
                 </button>
               ))}
           </div>
@@ -114,9 +116,9 @@ export function DrawPage() {
           <DiffGrid result={result} selected={selected} onSelect={setSelected} />
           {sel && (
             <p className="draw-detail" data-testid="draw-detail">
-              <b>{selected}</b>: {t('draw.drawn')} {t(`actionName.${sel.drawn}`)} · {t('draw.expected')}{' '}
+              <b>{selected}</b>: {t('draw.drawn')} {name(target.spot, sel.drawn)} · {t('draw.expected')}{' '}
               {ACTIONS.filter((a) => sel.expected[a] > 0)
-                .map((a) => `${t(`actionName.${a}`)} ${Math.round(sel.expected[a] * 100)}%`)
+                .map((a) => `${name(target.spot, a)} ${Math.round(sel.expected[a] * 100)}%`)
                 .join(' · ')}
             </p>
           )}

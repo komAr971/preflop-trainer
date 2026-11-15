@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import type { Action, Spot } from '../core/chart'
+import { bbChecks, type Action, type Spot } from '../core/chart'
 import { fmtBb } from '../core/format'
 import type { ActionOption } from '../core/scenario'
 
@@ -13,12 +13,23 @@ export function useActionLabel() {
       case 'fold':
         return t('action.fold')
       case 'call':
-        return spot.kind === 'rfi' ? t('action.limp') : t('action.call', { amount })
+        if (bbChecks(spot)) return t('action.check')
+        if (spot.kind === 'rfi') return t('action.limp')
+        if (spot.kind === 'vsLimp') return t('action.overLimp', { amount })
+        return t('action.call', { amount })
       case 'raise':
         if (spot.kind === 'rfi') return t('action.open', { amount })
         if (spot.kind === 'vsOpen') return t('action.threeBet', { amount })
         if (spot.kind === 'vs4bet') return t('action.allIn', { amount })
+        if (spot.kind === 'vsLimp') return t('action.iso', { amount })
         return t('action.fourBet', { amount })
     }
   }
+}
+
+/** Short action name for strategy texts; BB facing limps "calls" by checking. */
+export function useActionName() {
+  const { t } = useTranslation()
+  return (spot: Spot, action: Action): string =>
+    bbChecks(spot) && action === 'call' ? t('actionName.check') : t(`actionName.${action}`)
 }

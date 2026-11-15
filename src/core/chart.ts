@@ -27,6 +27,8 @@ const spotSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('vs3bet'), hero: positionSchema, villain: positionSchema }),
   /** Hero 3-bet the villain's open and faces a 4-bet. */
   z.object({ kind: z.literal('vs4bet'), hero: positionSchema, villain: positionSchema }),
+  /** Folded to limpers before hero; `limpers` 3 means 3 or more. */
+  z.object({ kind: z.literal('vsLimp'), hero: positionSchema, limpers: z.union([z.literal(1), z.literal(2), z.literal(3)]) }),
 ])
 export type Spot = z.infer<typeof spotSchema>
 export type SpotKey = string
@@ -44,6 +46,9 @@ export const chartFileSchema = z.object({
     threeBetIpX: positive,
     threeBetOopX: positive,
     fourBetX: positive,
+    /** Isolation raise vs one limper; +1bb per extra limper. Optional for older files. */
+    isoIpBb: positive.default(4),
+    isoOopBb: positive.default(5),
   }),
   spots: z
     .array(
@@ -76,7 +81,9 @@ export interface Chart {
 export type ParseChartResult = { ok: true; chart: Chart } | { ok: false; errors: string[] }
 
 export function spotKey(spot: Spot): SpotKey {
-  return spot.kind === 'rfi' ? `rfi:${spot.hero}` : `${spot.kind}:${spot.hero}:${spot.villain}`
+  if (spot.kind === 'rfi') return `rfi:${spot.hero}`
+  if (spot.kind === 'vsLimp') return `vsLimp:${spot.hero}:${spot.limpers}`
+  return `${spot.kind}:${spot.hero}:${spot.villain}`
 }
 
 const order = (p: Position) => POSITIONS.indexOf(p)
@@ -93,10 +100,17 @@ function spotRuleError(spot: Spot, actions: Partial<Record<PlayableAction, strin
       return order(spot.villain) > order(spot.hero) ? null : '3-bettor must act after hero'
     case 'vs4bet':
       return order(spot.villain) < order(spot.hero) ? null : 'opener (4-bettor) must act before hero'
+    case 'vsLimp':
+      return order(spot.hero) >= spot.limpers ? null : `not enough seats before ${spot.hero} for ${spot.limpers} limper(s)`
   }
 }
 
 const EPS = 1e-9
+
+/** BB facing limps closes the action: "call" is a free check and there is no fold. */
+export function bbChecks(spot: Spot): boolean {
+  return spot.kind === 'vsLimp' && spot.hero === 'BB'
+}
 const round = (n: number) => Math.round(n * 1e6) / 1e6
 
 export function parseChart(input: unknown): ParseChartResult {
@@ -142,7 +156,10 @@ export function parseChart(input: unknown): ParseChartResult {
       if (call + raise > 1 + EPS) {
         errors.push(`${key}: ${hand} frequencies sum to ${round(call + raise)} (> 1)`)
       }
-      hands.set(hand, { fold: Math.max(0, round(1 - call - raise)), call, raise })
+      const rest = Math.max(0, round(1 - call - raise))
+      // BB facing limps cannot fold: the remainder is a check.
+      if (bbChecks(spot)) hands.set(hand, { fold: 0, call: round(call + rest), raise })
+      else hands.set(hand, { fold: rest, call, raise })
     }
     spots.set(key, { spot, hands })
   }

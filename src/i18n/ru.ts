@@ -17,6 +17,10 @@ export const ru = {
     vsOpen: '{{villain}} открыл до {{amount}}bb',
     vs3bet: 'Ты открыл {{open}}bb, {{villain}} сделал 3-бет до {{amount}}bb',
     vs4bet: '{{villain}} открыл, ты сделал 3-бет до {{threeBet}}bb, {{villain}} сделал 4-бет до {{amount}}bb',
+    vsLimp_one: 'Лимп: {{limpers}}',
+    vsLimp_few: 'Лимпы: {{limpers}}',
+    vsLimp_many: 'Лимпы: {{limpers}}',
+    vsLimp_other: 'Лимпы: {{limpers}}',
   },
   table: {
     rollHint: 'Рандомизатор: действие выбирается по числу 1–100',
@@ -32,11 +36,15 @@ export const ru = {
     threeBet: '3-бет до {{amount}}bb',
     fourBet: '4-бет до {{amount}}bb',
     allIn: 'Олл-ин {{amount}}bb',
+    check: 'Чек',
+    overLimp: 'Лимп {{amount}}bb',
+    iso: 'Изо-рейз до {{amount}}bb',
   },
   actionName: {
     fold: 'Фолд',
     call: 'Колл',
     raise: 'Рейз',
+    check: 'Чек',
   },
   charts: {
     create: 'Новый чарт',
@@ -62,12 +70,14 @@ export const ru = {
     vsOpen: 'Против опена',
     vs3bet: 'Против 3-бета',
     vs4bet: 'Против 4-бета',
+    vsLimp: 'Против лимпа',
   },
   spotLabel: {
     rfi: 'RFI · {{hero}}',
     vsOpen: '{{hero}} против опена {{villain}}',
     vs3bet: '{{hero}} против 3-бета {{villain}}',
     vs4bet: '{{hero}} против 4-бета {{villain}}',
+    vsLimp: '{{hero}} против лимперов: {{limpers}}',
   },
   sizing: {
     openBb: 'Опен, bb',
@@ -75,6 +85,8 @@ export const ru = {
     threeBetIpX: '3-бет в позиции, ×',
     threeBetOopX: '3-бет без позиции, ×',
     fourBetX: '4-бет, ×',
+    isoIpBb: 'Изо-рейз в позиции, bb',
+    isoOopBb: 'Изо-рейз без позиции, bb',
   },
   editor: {
     back: 'К чартам',

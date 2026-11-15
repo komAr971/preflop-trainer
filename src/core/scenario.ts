@@ -1,4 +1,5 @@
 import { POSITIONS, type Action, type CompiledSpot, type Position, type Sizings, type Spot } from './chart'
+import type { Rng } from './trainer'
 
 export type SeatStatus = 'hero' | 'folded' | 'acted' | 'waiting'
 
@@ -27,6 +28,8 @@ export interface Scenario {
   heroThreeBetBb?: number
   /** Hero's own open in vs3bet. */
   heroOpenBb?: number
+  /** Seats that limped (vsLimp), in action order. */
+  limpers?: Position[]
 }
 
 export const STACK_BB = 100
@@ -44,7 +47,8 @@ function threeBetSize(threeBettor: Position, opener: Position, open: number, s: 
   return roundHalf(open * (isInPosition(threeBettor, opener) ? s.threeBetIpX : s.threeBetOopX))
 }
 
-export function buildScenario(compiled: CompiledSpot, sizings: Sizings): Scenario {
+/** `rng` picks limper seats in vsLimp spots. */
+export function buildScenario(compiled: CompiledSpot, sizings: Sizings, rng: Rng = Math.random): Scenario {
   const { spot } = compiled
   const hero = spot.hero
   const seats: SeatState[] = POSITIONS.map((position) => ({ position, status: 'folded', betBb: blind(position) }))
@@ -55,6 +59,7 @@ export function buildScenario(compiled: CompiledSpot, sizings: Sizings): Scenari
   let facingBb: number | undefined
   let heroOpenBb: number | undefined
   let heroThreeBetBb: number | undefined
+  let limpers: Position[] | undefined
 
   switch (spot.kind) {
     case 'rfi': {
@@ -112,8 +117,30 @@ export function buildScenario(compiled: CompiledSpot, sizings: Sizings): Scenari
       ]
       break
     }
+    case 'vsLimp': {
+      // "3" means 3+: pick 3..all of the seats before hero.
+      const before = POSITIONS.slice(0, preIdx(hero))
+      const count = spot.limpers < 3 ? spot.limpers : 3 + Math.floor(rng() * (before.length - 2))
+      const pool = [...before]
+      const chosen: Position[] = []
+      for (let i = 0; i < count; i++) chosen.push(pool.splice(Math.floor(rng() * pool.length), 1)[0])
+      limpers = chosen.sort((a, b) => preIdx(a) - preIdx(b))
+      for (const p of limpers) {
+        at(p).status = 'acted'
+        at(p).betBb = 1
+      }
+      for (const s of seats) if (preIdx(s.position) > preIdx(hero)) s.status = 'waiting'
+      const inPosition = hero !== 'SB' && hero !== 'BB'
+      const iso = (inPosition ? sizings.isoIpBb : sizings.isoOopBb) + (limpers.length - 1)
+      facingBb = 1
+      actions =
+        hero === 'BB'
+          ? [{ action: 'call', toBb: 1 }, { action: 'raise', toBb: iso }]
+          : [{ action: 'fold' }, { action: 'call', toBb: 1 }, { action: 'raise', toBb: iso }]
+      break
+    }
   }
 
   const potBb = seats.reduce((sum, s) => sum + s.betBb, 0)
-  return { spot, seats, potBb, actions, facingBb, heroOpenBb, heroThreeBetBb }
+  return { spot, seats, potBb, actions, facingBb, heroOpenBb, heroThreeBetBb, limpers }
 }

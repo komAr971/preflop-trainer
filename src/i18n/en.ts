@@ -19,6 +19,10 @@ export const en: Messages = {
     vsOpen: '{{villain}} opened to {{amount}}bb',
     vs3bet: 'You opened {{open}}bb, {{villain}} 3-bet to {{amount}}bb',
     vs4bet: '{{villain}} opened, you 3-bet to {{threeBet}}bb, {{villain}} 4-bet to {{amount}}bb',
+    vsLimp_one: 'Limper: {{limpers}}',
+    vsLimp_few: 'Limpers: {{limpers}}',
+    vsLimp_many: 'Limpers: {{limpers}}',
+    vsLimp_other: 'Limpers: {{limpers}}',
   },
   table: {
     rollHint: 'Randomizer: the action is picked by a 1–100 roll',
@@ -34,11 +38,15 @@ export const en: Messages = {
     threeBet: '3-bet to {{amount}}bb',
     fourBet: '4-bet to {{amount}}bb',
     allIn: 'All-in {{amount}}bb',
+    check: 'Check',
+    overLimp: 'Limp {{amount}}bb',
+    iso: 'Iso-raise to {{amount}}bb',
   },
   actionName: {
     fold: 'Fold',
     call: 'Call',
     raise: 'Raise',
+    check: 'Check',
   },
   charts: {
     create: 'New chart',
@@ -64,12 +72,14 @@ export const en: Messages = {
     vsOpen: 'Versus open',
     vs3bet: 'Versus 3-bet',
     vs4bet: 'Versus 4-bet',
+    vsLimp: 'Versus limpers',
   },
   spotLabel: {
     rfi: 'RFI · {{hero}}',
     vsOpen: '{{hero}} vs {{villain}} open',
     vs3bet: '{{hero}} vs {{villain}} 3-bet',
     vs4bet: '{{hero}} vs {{villain}} 4-bet',
+    vsLimp: '{{hero}} vs limpers: {{limpers}}',
   },
   sizing: {
     openBb: 'Open, bb',
@@ -77,6 +87,8 @@ export const en: Messages = {
     threeBetIpX: '3-bet in position, ×',
     threeBetOopX: '3-bet out of position, ×',
     fourBetX: '4-bet, ×',
+    isoIpBb: 'Iso-raise in position, bb',
+    isoOopBb: 'Iso-raise out of position, bb',
   },
   editor: {
     back: 'Charts',

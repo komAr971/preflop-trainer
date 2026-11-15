@@ -39,7 +39,7 @@ describe('StatsPage', () => {
     expect(await screen.findByTestId('stat-today')).toHaveTextContent('12 / 12')
     expect(screen.getByTestId('stat-streak')).toHaveTextContent('1 день')
     expect(screen.getByTestId('stat-accuracy')).toHaveTextContent('83%')
-    expect(screen.getByTestId('stat-learned')).toHaveTextContent('1 / 50')
+    expect(screen.getByTestId('stat-learned')).toHaveTextContent('1 / 62')
     const row = screen.getByTestId('spot-rfi:CO')
     expect(row).toHaveTextContent('100%')
     expect(within(row).getByText('выучено')).toBeInTheDocument()

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { parseChart, type Chart, type Spot } from './chart'
 import { buildScenario } from './scenario'
+import { mulberry32 } from './trainer'
 
 const sizings = { openBb: 2.5, sbOpenBb: 3, threeBetIpX: 3, threeBetOopX: 4, fourBetX: 2.2 }
 
@@ -96,5 +97,36 @@ describe('buildScenario: vs 4-bet', () => {
     const s = scenarioFor({ kind: 'vs4bet', hero: 'BB', villain: 'UTG' })
     expect(s.heroThreeBetBb).toBe(10)
     expect(s.facingBb).toBe(22)
+  })
+})
+
+describe('buildScenario: vs limp', () => {
+  const limpScenario = (spot: Spot, seed: number) => {
+    const chart = chartWith(spot)
+    return buildScenario([...chart.spots.values()][0], chart.sizings, mulberry32(seed))
+  }
+
+  it('seats the given number of limpers before hero, each with 1bb', () => {
+    for (let seed = 0; seed < 20; seed++) {
+      const s = limpScenario({ kind: 'vsLimp', hero: 'BTN', limpers: 2 }, seed)
+      expect(s.limpers).toHaveLength(2)
+      for (const p of s.limpers!) {
+        expect(['UTG', 'HJ', 'CO']).toContain(p)
+        expect(seat(s, p)).toMatchObject({ status: 'acted', betBb: 1 })
+      }
+      // iso in position: 4bb + 1bb for the extra limper
+      expect(s.actions).toEqual([{ action: 'fold' }, { action: 'call', toBb: 1 }, { action: 'raise', toBb: 5 }])
+    }
+  })
+
+  it('"3+" seats 3 or more limpers', () => {
+    const counts = new Set<number>()
+    for (let seed = 0; seed < 50; seed++) counts.add(limpScenario({ kind: 'vsLimp', hero: 'BB', limpers: 3 }, seed).limpers!.length)
+    expect([...counts].sort()).toEqual([3, 4, 5])
+  })
+
+  it('BB can check or raise (no fold), iso out of position', () => {
+    const s = limpScenario({ kind: 'vsLimp', hero: 'BB', limpers: 1 }, 1)
+    expect(s.actions).toEqual([{ action: 'call', toBb: 1 }, { action: 'raise', toBb: 5 }])
   })
 })

@@ -5,8 +5,14 @@ import { usePositionName } from './usePositionName'
 export function useSpotLabel() {
   const { t } = useTranslation()
   const pos = usePositionName()
-  return (spot: Spot) =>
-    spot.kind === 'rfi'
-      ? t('spotLabel.rfi', { hero: pos(spot.hero) })
-      : t(`spotLabel.${spot.kind}`, { hero: pos(spot.hero), villain: pos(spot.villain) })
+  return (spot: Spot) => {
+    switch (spot.kind) {
+      case 'rfi':
+        return t('spotLabel.rfi', { hero: pos(spot.hero) })
+      case 'vsLimp':
+        return t('spotLabel.vsLimp', { hero: pos(spot.hero), limpers: spot.limpers === 3 ? '3+' : spot.limpers })
+      default:
+        return t(`spotLabel.${spot.kind}`, { hero: pos(spot.hero), villain: pos(spot.villain) })
+    }
+  }
 }

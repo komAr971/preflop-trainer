@@ -53,3 +53,19 @@ describe('drawingToSpot', () => {
     expect(s.hands.get('72o')).toEqual({ fold: 1, call: 0, raise: 0 })
   })
 })
+
+describe('BB versus limpers', () => {
+  it('unpainted hands are checks, so an empty grid matches a raise-nothing chart', () => {
+    const res = parseChart({
+      version: 1,
+      name: 't',
+      format: { players: 6, stackBb: 100 },
+      sizings: { openBb: 2.5, sbOpenBb: 3, threeBetIpX: 3, threeBetOopX: 4, fourBetX: 2.2 },
+      spots: [{ spot: { kind: 'vsLimp', hero: 'BB', limpers: 1 }, actions: { raise: 'AA' } }],
+    })
+    if (!res.ok) throw new Error(res.errors.join())
+    const target = res.chart.spots.get('vsLimp:BB:1')!
+    expect(checkDrawing(target, new Map([['AA', 'raise']])).score).toBe(100)
+    expect(checkDrawing(target, new Map()).cells.get('72o')).toMatchObject({ drawn: 'call', ok: true })
+  })
+})

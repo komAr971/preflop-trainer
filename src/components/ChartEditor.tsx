@@ -19,6 +19,7 @@ import { useTrainer } from '../store/trainerStore'
 import { navigate } from '../ui/useHashRoute'
 import { NumberField } from './NumberField'
 import { RangeGrid } from './RangeGrid'
+import { useActionName } from './actionLabels'
 import { useSpotLabel } from './spotLabel'
 
 const PRESETS: { id: 'fold' | 'call' | 'raise'; brush: Brush }[] = [
@@ -27,7 +28,7 @@ const PRESETS: { id: 'fold' | 'call' | 'raise'; brush: Brush }[] = [
   { id: 'fold', brush: { raise: 0, call: 0 } },
 ]
 
-const SIZING_KEYS: (keyof Sizings)[] = ['openBb', 'sbOpenBb', 'threeBetIpX', 'threeBetOopX', 'fourBetX']
+const SIZING_KEYS: (keyof Sizings)[] = ['openBb', 'sbOpenBb', 'threeBetIpX', 'threeBetOopX', 'fourBetX', 'isoIpBb', 'isoOopBb']
 
 function actionRangeText(chart: Chart, key: SpotKey, action: 'call' | 'raise'): string {
   const spot = chart.spots.get(key)
@@ -40,6 +41,7 @@ function actionRangeText(chart: Chart, key: SpotKey, action: 'call' | 'raise'): 
 export function ChartEditor({ chartId }: { chartId: number }) {
   const { t } = useTranslation()
   const spotLabel = useSpotLabel()
+  const name = useActionName()
   const repo = useTrainer((s) => s.repo)
   const activeId = useTrainer((s) => s.chartId)
   const selectChart = useTrainer((s) => s.selectChart)
@@ -172,7 +174,7 @@ export function ChartEditor({ chartId }: { chartId: number }) {
       <label className="spot-select">
         {t('editor.spot')}
         <select value={spotKey} onChange={(e) => setSpotKey(e.target.value)}>
-          {(['rfi', 'vsOpen', 'vs3bet', 'vs4bet'] as const).map((kind) => (
+          {(['rfi', 'vsOpen', 'vs3bet', 'vs4bet', 'vsLimp'] as const).map((kind) => (
             <optgroup key={kind} label={t(`spotKind.${kind}`)}>
               {ALL_SPOTS.filter((s) => s.spot.kind === kind).map((s) => (
                 <option key={s.key} value={s.key}>
@@ -195,7 +197,7 @@ export function ChartEditor({ chartId }: { chartId: number }) {
       ) : (
         <>
           <div className="brushes" role="radiogroup" aria-label={t('editor.brush')}>
-            {PRESETS.filter((p) => p.id !== 'call' || callAllowed).map((p) => (
+            {PRESETS.filter((p) => actions.includes(p.id)).map((p) => (
               <button
                 key={p.id}
                 type="button"
@@ -204,7 +206,7 @@ export function ChartEditor({ chartId }: { chartId: number }) {
                 className={`brush brush-${p.id}`}
                 onClick={() => setBrush(p.brush)}
               >
-                {t(`actionName.${p.id}`)}
+                {name(spotDef.spot, p.id)}
               </button>
             ))}
             <span className="brush-mix">
@@ -221,7 +223,7 @@ export function ChartEditor({ chartId }: { chartId: number }) {
               </label>
               {callAllowed && (
                 <label>
-                  {t('actionName.call')} %
+                  {name(spotDef.spot, 'call')} %
                   <NumberField
                     integer
                     min={0}
@@ -239,7 +241,7 @@ export function ChartEditor({ chartId }: { chartId: number }) {
 
           <p className="widths" data-testid="widths">
             {t('actionName.raise')} {widths!.raise.toFixed(1)}%
-            {callAllowed && ` · ${t('actionName.call')} ${widths!.call.toFixed(1)}%`}
+            {callAllowed && ` · ${name(spotDef.spot, 'call')} ${widths!.call.toFixed(1)}%`}
           </p>
 
           <div className="range-texts">
@@ -247,7 +249,7 @@ export function ChartEditor({ chartId }: { chartId: number }) {
               .filter((a) => a === 'raise' || callAllowed)
               .map((a) => (
                 <label key={a}>
-                  {t('editor.rangeFor', { action: t(`actionName.${a}`) })}
+                  {t('editor.rangeFor', { action: name(spotDef.spot, a) })}
                   <textarea
                     rows={2}
                     value={texts[a]}

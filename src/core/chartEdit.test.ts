@@ -28,9 +28,9 @@ function chart(): Chart {
 }
 
 describe('ALL_SPOTS', () => {
-  it('lists 50 valid spots', () => {
-    expect(ALL_SPOTS).toHaveLength(50)
-    expect(new Set(ALL_SPOTS.map((s) => s.key)).size).toBe(50)
+  it('lists 62 valid spots', () => {
+    expect(ALL_SPOTS).toHaveLength(62)
+    expect(new Set(ALL_SPOTS.map((s) => s.key)).size).toBe(62)
   })
 })
 

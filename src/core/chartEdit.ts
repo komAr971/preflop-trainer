@@ -1,4 +1,4 @@
-import { POSITIONS, spotKey, type Action, type Chart, type CompiledSpot, type Sizings, type Spot, type SpotKey } from './chart'
+import { POSITIONS, bbChecks, spotKey, type Action, type Chart, type CompiledSpot, type Sizings, type Spot, type SpotKey } from './chart'
 import { ALL_HANDS, combosOf, type Hand } from './hands'
 import { RangeParseError, parseRange } from './range'
 
@@ -17,11 +17,15 @@ export const ALL_SPOTS: { key: SpotKey; spot: Spot }[] = (() => {
     if (villain === 'BB') return
     for (const hero of POSITIONS.slice(i + 1)) out.push({ kind: 'vs4bet', hero, villain })
   })
+  POSITIONS.forEach((hero, i) => {
+    for (const limpers of [1, 2, 3] as const) if (i >= limpers) out.push({ kind: 'vsLimp', hero, limpers })
+  })
   return out.map((spot) => ({ key: spotKey(spot), spot }))
 })()
 
 export function allowedActions(spot: Spot): Action[] {
   if (spot.kind === 'rfi' && spot.hero !== 'SB') return ['fold', 'raise']
+  if (bbChecks(spot)) return ['call', 'raise']
   return ['fold', 'call', 'raise']
 }
 
@@ -43,7 +47,10 @@ export function paintHands(chart: Chart, key: SpotKey, hands: Hand[], brush: Bru
   const current = chart.spots.get(key)
   if (!current) return chart
   const next = new Map(current.hands)
-  const freqs = { fold: Math.max(0, round(1 - brush.call - brush.raise)), call: brush.call, raise: brush.raise }
+  const rest = Math.max(0, round(1 - brush.call - brush.raise))
+  const freqs = bbChecks(current.spot)
+    ? { fold: 0, call: round(brush.call + rest), raise: brush.raise }
+    : { fold: rest, call: brush.call, raise: brush.raise }
   for (const h of hands) next.set(h, freqs)
   return withSpot(chart, key, { ...current, hands: next })
 }
@@ -68,14 +75,17 @@ export function setActionRange(chart: Chart, key: SpotKey, action: 'call' | 'rai
     const f = current.hands.get(h)!
     const value = range.get(h) ?? 0
     if (value + f[other] > 1 + EPS) over.push(h)
-    next.set(h, { ...f, [action]: value, fold: Math.max(0, round(1 - value - f[other])) })
+    const rest = Math.max(0, round(1 - value - f[other]))
+    if (bbChecks(current.spot) && action === 'raise') next.set(h, { fold: 0, raise: value, call: round(1 - value) })
+    else next.set(h, { ...f, [action]: value, fold: rest })
   }
   if (over.length) return { ok: false, error: `Above 100% with ${other}: ${over.join(', ')}` }
   return { ok: true, chart: withSpot(chart, key, { ...current, hands: next }) }
 }
 
 export function addSpot(chart: Chart, spot: Spot): Chart {
-  const hands = new Map(ALL_HANDS.map((h) => [h, { fold: 1, call: 0, raise: 0 }]))
+  const empty = bbChecks(spot) ? { fold: 0, call: 1, raise: 0 } : { fold: 1, call: 0, raise: 0 }
+  const hands = new Map(ALL_HANDS.map((h) => [h, empty]))
   return withSpot(chart, spotKey(spot), { spot, hands })
 }
 

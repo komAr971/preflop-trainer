@@ -1,8 +1,13 @@
-import type { Action, CompiledSpot, Frequencies, Spot } from './chart'
+import { bbChecks, type Action, type CompiledSpot, type Frequencies, type Spot } from './chart'
 import { ALL_HANDS, combosOf, type Hand } from './hands'
 import { DEFAULT_THRESHOLD, correctActions } from './trainer'
 
-/** What the user painted; unpainted hands are fold. */
+/** Unpainted hands: fold, or check for BB facing limps. */
+export function defaultAction(spot: Spot): Action {
+  return bbChecks(spot) ? 'call' : 'fold'
+}
+
+/** What the user painted; unpainted hands take the default action. */
 export type Drawing = Map<Hand, Action>
 
 export interface DrawCell {
@@ -29,11 +34,11 @@ export function checkDrawing(target: CompiledSpot, drawing: Drawing, threshold =
   let relevantCombos = 0
   for (const hand of ALL_HANDS) {
     const expected = target.hands.get(hand)!
-    const drawn = drawing.get(hand) ?? 'fold'
+    const drawn = drawing.get(hand) ?? defaultAction(target.spot)
     const ok = correctActions(expected, threshold).includes(drawn)
     cells.set(hand, { drawn, expected, ok })
     if (!ok) wrong.push(hand)
-    if (expected.fold < 1 || drawn !== 'fold') {
+    if (expected[defaultAction(target.spot)] < 1 || drawn !== defaultAction(target.spot)) {
       relevantCombos += combosOf(hand)
       if (ok) okCombos += combosOf(hand)
     }
@@ -45,7 +50,7 @@ export function checkDrawing(target: CompiledSpot, drawing: Drawing, threshold =
 export function drawingToSpot(spot: Spot, drawing: Drawing): CompiledSpot {
   const hands = new Map<Hand, Frequencies>()
   for (const hand of ALL_HANDS) {
-    const a = drawing.get(hand) ?? 'fold'
+    const a = drawing.get(hand) ?? defaultAction(spot)
     hands.set(hand, { fold: a === 'fold' ? 1 : 0, call: a === 'call' ? 1 : 0, raise: a === 'raise' ? 1 : 0 })
   }
   return { spot, hands }

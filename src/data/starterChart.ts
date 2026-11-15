@@ -14,12 +14,64 @@ const VS_4BET: ChartFile['spots'] = SEATS.flatMap((villain, i) =>
   })),
 ).filter((s) => s.spot.villain !== 'BB')
 
+/**
+ * Versus limpers (one limper isolates a bit wider than RFI; more limpers → tighter raises, more over-limps).
+ * BB checks everything it does not raise.
+ */
+const VS_LIMP: ChartFile['spots'] = [
+  { spot: { kind: 'vsLimp', hero: 'HJ', limpers: 1 }, actions: { raise: '22+,A2s+,K9s+,Q9s+,J9s+,T9s,98s,87s,ATo+,KTo+,QJo' } },
+  {
+    spot: { kind: 'vsLimp', hero: 'CO', limpers: 1 },
+    actions: { raise: '22+,A2s+,K7s+,Q9s+,J9s+,T8s+,97s+,87s,76s,65s,A8o+,K9o+,QTo+,JTo' },
+  },
+  {
+    spot: { kind: 'vsLimp', hero: 'CO', limpers: 2 },
+    actions: { raise: '88+,ATs+,KJs+,AJo+,KQo', call: '77-22,A9s-A2s,KTs,QJs-QTs,JTs,T9s,98s,87s,76s' },
+  },
+  {
+    spot: { kind: 'vsLimp', hero: 'BTN', limpers: 1 },
+    actions: { raise: '22+,A2s+,K2s+,Q5s+,J7s+,T7s+,96s+,85s+,75s+,64s+,54s,A2o+,K9o+,Q9o+,J9o+,T9o,98o' },
+  },
+  {
+    spot: { kind: 'vsLimp', hero: 'BTN', limpers: 2 },
+    actions: { raise: '77+,A9s+,KTs+,QJs,ATo+,KJo+', call: '66-22,A8s-A2s,K9s-K6s,QTs-Q9s,J9s+,T9s,98s,87s,76s,65s,54s' },
+  },
+  {
+    spot: { kind: 'vsLimp', hero: 'BTN', limpers: 3 },
+    actions: { raise: '99+,AJs+,KQs,AQo+', call: '88-22,ATs-A2s,KJs-K9s,QJs-QTs,J9s+,T9s,98s,87s,76s,65s,54s' },
+  },
+  {
+    spot: { kind: 'vsLimp', hero: 'SB', limpers: 1 },
+    actions: {
+      raise: '66+,A8s+,KTs+,QTs+,JTs,ATo+,KJo+',
+      call: '55-22,A7s-A2s,K9s-K6s,Q9s,J9s,T9s,98s,87s,76s,65s,54s,A9o-A7o,KTo,QJo-QTo,JTo',
+    },
+  },
+  {
+    spot: { kind: 'vsLimp', hero: 'SB', limpers: 2 },
+    actions: {
+      raise: '88+,ATs+,KJs+,AJo+,KQo',
+      call: '77-22,A9s-A2s,KTs-K8s,QJs-QTs,J9s+,T9s,98s,87s,76s,65s,54s,ATo,KJo,QJo',
+    },
+  },
+  {
+    spot: { kind: 'vsLimp', hero: 'SB', limpers: 3 },
+    actions: {
+      raise: '99+,AJs+,KQs,AQo+',
+      call: '88-22,ATs-A2s,KJs-K9s,QJs-QTs,JTs,T9s,98s,87s,76s,65s,54s,AJo-ATo,KQo-KJo',
+    },
+  },
+  { spot: { kind: 'vsLimp', hero: 'BB', limpers: 1 }, actions: { raise: '77+,A9s+,KTs+,QJs,ATo+,KJo+' } },
+  { spot: { kind: 'vsLimp', hero: 'BB', limpers: 2 }, actions: { raise: '88+,ATs+,KJs+,AJo+,KQo' } },
+  { spot: { kind: 'vsLimp', hero: 'BB', limpers: 3 }, actions: { raise: '99+,AJs+,KQs,AQo+' } },
+]
+
 export const starterChart: ChartFile = {
   version: 1,
   name: 'Базовый 6-max 100bb',
   description: 'Стартовый набор: RFI, против опена, против 3-бета. Сверьте со своими чартами.',
   format: { players: 6, stackBb: 100 },
-  sizings: { openBb: 2.5, sbOpenBb: 3, threeBetIpX: 3, threeBetOopX: 4, fourBetX: 2.2 },
+  sizings: { openBb: 2.5, sbOpenBb: 3, threeBetIpX: 3, threeBetOopX: 4, fourBetX: 2.2, isoIpBb: 4, isoOopBb: 5 },
   spots: [
     // ── RFI ──
     { spot: { kind: 'rfi', hero: 'UTG' }, actions: { raise: '22+,A2s+,KTs+,QTs+,JTs,T9s,98s,AJo+,KQo' } },
@@ -158,5 +210,6 @@ export const starterChart: ChartFile = {
     // ── vs 4-bet: hero 3-bet the opener and faces a 4-bet ──
     // In position (hero not in the blinds): 5-bet QQ+/AK, call JJ-TT and AQs. Blinds (out of position): 5-bet or fold.
     ...VS_4BET,
+    ...VS_LIMP,
   ],
 }
