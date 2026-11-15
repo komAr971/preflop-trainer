@@ -11,6 +11,8 @@ import { StatsPage } from './StatsPage'
 
 let repo: Repo
 let n = 0
+/** Strictly increasing timestamps so "most recent" is unambiguous. */
+let clock = Date.now()
 
 beforeEach(async () => {
   setLanguage('ru')
@@ -21,7 +23,7 @@ beforeEach(async () => {
 async function record(count: number, correct: boolean, spotKey = 'rfi:CO') {
   for (let i = 0; i < count; i++) {
     await repo.recordAttempt(
-      { chartId: STARTER_ID, spotKey, hand: 'K9o', action: 'fold', correct, ts: Date.now() + i },
+      { chartId: STARTER_ID, spotKey, hand: 'K9o', action: 'fold', correct, ts: clock++ },
       [],
       i,
     )
