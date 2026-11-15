@@ -571,8 +571,7 @@ kbd {
   font-variant-numeric: tabular-nums;
 }
 
-.settings input[type='number'],
-.sound-test button {
+.settings input[type='number'] {
   font: inherit;
   padding: 6px 10px;
   border-radius: 8px;
@@ -582,13 +581,45 @@ kbd {
   max-width: 160px;
 }
 
-.sound-test {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+.setting-hint {
+  color: var(--muted);
+  margin: 4px 0 8px;
 }
 
-.sound-test button {
+.sound-kinds {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.sound-kind {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.sound-kind button {
+  font: inherit;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  padding: 2px 10px;
+  cursor: pointer;
+}
+
+.mute {
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
   cursor: pointer;
 }
 

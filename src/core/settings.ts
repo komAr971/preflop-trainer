@@ -10,7 +10,11 @@ export const settingsSchema = z.object({
   learnedThreshold: z.number().min(0.5).max(1).default(0.9),
   dailyGoal: z.number().int().min(1).max(5000).default(100),
   sound: z.boolean().default(true),
-  volume: z.number().min(0).max(1).default(0.6),
+  volume: z.number().min(0).max(1).default(0.5),
+  /** Individual sounds on/off. */
+  soundKinds: z
+    .object({ deal: z.boolean(), chip: z.boolean(), correct: z.boolean(), wrong: z.boolean() })
+    .default({ deal: true, chip: true, correct: true, wrong: true }),
 })
 
 export type Settings = z.infer<typeof settingsSchema>

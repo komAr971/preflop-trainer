@@ -8,7 +8,7 @@ import type { Action } from '../core/chart'
 import { fmtBb } from '../core/format'
 import type { Scenario } from '../core/scenario'
 import { useTrainer } from '../store/trainerStore'
-import { playSound } from '../ui/sound'
+import { playSound, type SoundKind } from '../ui/sound'
 
 const AUTO_NEXT_MS = 700
 
@@ -23,7 +23,9 @@ function useSpotText(s: Scenario): string {
 export function TrainerPage() {
   const { t } = useTranslation()
   const { ready, question, answer, submit, next, settings } = useTrainer()
-  const volume = settings.sound ? settings.volume : 0
+  const sound = (kind: SoundKind) => {
+    if (settings.sound && settings.soundKinds[kind]) playSound(kind, settings.volume)
+  }
   const spotText = useSpotText(question.scenario)
 
   // Keyboard: F/C/R to answer, Space/Enter for next.
@@ -46,16 +48,16 @@ export function TrainerPage() {
   // Sounds: deal (+ chips when facing a bet) on each new hand, result on answer.
   useEffect(() => {
     if (!ready) return
-    playSound('deal', volume)
+    sound('deal')
     if (question.scenario.facingBb) {
-      const id = window.setTimeout(() => playSound('chip', volume), 180)
+      const id = window.setTimeout(() => sound('chip'), 180)
       return () => window.clearTimeout(id)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only on a new hand, not on volume change
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only on a new hand, not on settings change
   }, [ready, question.id])
 
   useEffect(() => {
-    if (answer) playSound(answer.correct ? 'correct' : 'wrong', volume)
+    if (answer) sound(answer.correct ? 'correct' : 'wrong')
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only when an answer arrives
   }, [answer])
 

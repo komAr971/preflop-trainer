@@ -18,6 +18,8 @@ export default function App() {
   const { t } = useTranslation()
   const route = useHashRoute()
   const session = useTrainer((s) => s.session)
+  const soundOn = useTrainer((s) => s.settings.sound)
+  const updateSettings = useTrainer((s) => s.updateSettings)
   const percent = session.total ? Math.round((session.correct / session.total) * 100) : 0
 
   return (
@@ -39,6 +41,16 @@ export default function App() {
           {t('app.score', { correct: session.correct, total: session.total })}
           {session.total > 0 && ` (${percent}%)`}
         </span>
+        <button
+          type="button"
+          className="mute"
+          aria-pressed={!soundOn}
+          aria-label={soundOn ? t('app.mute') : t('app.unmute')}
+          title={soundOn ? t('app.mute') : t('app.unmute')}
+          onClick={() => updateSettings({ sound: !soundOn })}
+        >
+          {soundOn ? '🔊' : '🔇'}
+        </button>
       </header>
 
       {route.page === 'train' && <TrainerPage />}

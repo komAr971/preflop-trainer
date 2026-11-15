@@ -2,6 +2,8 @@ import type { Messages } from './index'
 
 export const en: Messages = {
   app: {
+    mute: 'Mute sounds',
+    unmute: 'Unmute sounds',
     title: 'Preflop Trainer',
     score: 'Session: {{correct}}/{{total}}',
     language: 'Language',
@@ -126,6 +128,8 @@ export const en: Messages = {
     learnedWindow: 'Window for “learned”, hands',
     sound: 'Sound',
     soundOn: 'Sounds on',
+    soundKinds: 'Which sounds to play:',
+    preview: 'Preview: {{name}}',
     volume: 'Volume',
     sounds: {
       deal: 'Deal',

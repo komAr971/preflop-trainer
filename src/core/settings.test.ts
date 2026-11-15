@@ -10,7 +10,8 @@ describe('settings', () => {
       learnedThreshold: 0.9,
       dailyGoal: 100,
       sound: true,
-      volume: 0.6,
+      volume: 0.5,
+      soundKinds: { deal: true, chip: true, correct: true, wrong: true },
     })
   })
 

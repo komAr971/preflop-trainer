@@ -1,5 +1,7 @@
 export const ru = {
   app: {
+    mute: 'Выключить звук',
+    unmute: 'Включить звук',
     title: 'Тренажёр префлопа',
     score: 'Сессия: {{correct}}/{{total}}',
     language: 'Язык',
@@ -124,6 +126,8 @@ export const ru = {
     learnedWindow: 'Окно для «выучено», раздач',
     sound: 'Звук',
     soundOn: 'Звуки включены',
+    soundKinds: 'Какие звуки играть:',
+    preview: 'Прослушать: {{name}}',
     volume: 'Громкость',
     sounds: {
       deal: 'Раздача',

@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { LANGUAGES, setLanguage } from '../i18n'
 import { useTrainer } from '../store/trainerStore'
-import { playSound } from '../ui/sound'
+import { SOUND_KINDS, playSound } from '../ui/sound'
 import { NumberField } from './NumberField'
 
 function Percent({
@@ -117,11 +117,28 @@ export function SettingsPage() {
           step={5}
           onChange={(volume) => update({ volume })}
         />
-        <div className="sound-test">
-          {(['deal', 'chip', 'correct', 'wrong'] as const).map((k) => (
-            <button key={k} type="button" disabled={!settings.sound} onClick={() => playSound(k, settings.volume)}>
-              ▶ {t(`settings.sounds.${k}`)}
-            </button>
+        <p className="setting-hint">{t('settings.soundKinds')}</p>
+        <div className="sound-kinds">
+          {SOUND_KINDS.map((k) => (
+            <div key={k} className="sound-kind">
+              <label className="setting-inline">
+                <input
+                  type="checkbox"
+                  checked={settings.soundKinds[k]}
+                  disabled={!settings.sound}
+                  onChange={(e) => update({ soundKinds: { ...settings.soundKinds, [k]: e.target.checked } })}
+                />
+                <span>{t(`settings.sounds.${k}`)}</span>
+              </label>
+              <button
+                type="button"
+                aria-label={t('settings.preview', { name: t(`settings.sounds.${k}`) })}
+                disabled={!settings.sound}
+                onClick={() => playSound(k, settings.volume)}
+              >
+                ▶
+              </button>
+            </div>
           ))}
         </div>
       </section>
