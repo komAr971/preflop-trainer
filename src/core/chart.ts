@@ -35,13 +35,15 @@ export const chartFileSchema = z.object({
     threeBetOopX: positive,
     fourBetX: positive,
   }),
-  spots: z.array(
-    z.object({
-      spot: spotSchema,
-      /** Range strings per action; fold is implicit (the remainder). */
-      actions: z.object({ call: z.string().optional(), raise: z.string().optional() }).strict(),
-    }),
-  ),
+  spots: z
+    .array(
+      z.object({
+        spot: spotSchema,
+        /** Range strings per action; fold is implicit (the remainder). */
+        actions: z.object({ call: z.string().optional(), raise: z.string().optional() }).strict(),
+      }),
+    )
+    .min(1, 'chart needs at least one spot'),
 })
 export type ChartFile = z.infer<typeof chartFileSchema>
 export type Sizings = ChartFile['sizings']

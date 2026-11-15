@@ -80,12 +80,55 @@ export function parseRange(input: string): Range {
   return range
 }
 
-/** One token per hand in grid order; frequency 1 is omitted. */
-export function formatRange(range: Range): string {
-  return ALL_HANDS.filter((h) => range.has(h))
-    .map((h) => {
-      const f = range.get(h)!
-      return f === 1 ? h : `${h}:${f}`
+/** Contiguous runs of indices, e.g. [0,1,2,5] → [[0,1,2],[5]]. */
+function runs(indices: number[]): number[][] {
+  const out: number[][] = []
+  for (const i of indices) {
+    const last = out.at(-1)
+    if (last && last[last.length - 1] === i - 1) last.push(i)
+    else out.push([i])
+  }
+  return out
+}
+
+function compactTokens(hands: Set<Hand>): string[] {
+  const tokens: string[] = []
+  // Pairs: "77+" when the run reaches AA, "99-66" otherwise.
+  const pairIdx = RANKS.map((_, i) => i).filter((i) => hands.has(RANKS[i] + RANKS[i]))
+  for (const run of runs(pairIdx)) {
+    const top = RANKS[run[0]].repeat(2)
+    const bottom = RANKS[run[run.length - 1]].repeat(2)
+    if (run.length === 1) tokens.push(top)
+    else if (run[0] === 0) tokens.push(`${bottom}+`)
+    else tokens.push(`${top}-${bottom}`)
+  }
+  // Non-pairs per high card and suffix: "A9s+" when the run reaches the top kicker, "A5s-A2s" otherwise.
+  for (const suffix of ['s', 'o']) {
+    RANKS.forEach((high, hi) => {
+      const kickers = RANKS.map((_, i) => i).filter((i) => i > hi && hands.has(high + RANKS[i] + suffix))
+      for (const run of runs(kickers)) {
+        const top = high + RANKS[run[0]] + suffix
+        const bottom = high + RANKS[run[run.length - 1]] + suffix
+        if (run.length === 1) tokens.push(top)
+        else if (run[0] === hi + 1) tokens.push(`${bottom}+`)
+        else tokens.push(`${top}-${bottom}`)
+      }
     })
+  }
+  return tokens
+}
+
+/** Compact notation grouped by frequency (highest first): "22+,A2s+,KTo+,AJo:0.5". */
+export function formatRange(range: Range): string {
+  const byFreq = new Map<number, Set<Hand>>()
+  for (const h of ALL_HANDS) {
+    const f = range.get(h)
+    if (f === undefined) continue
+    if (!byFreq.has(f)) byFreq.set(f, new Set())
+    byFreq.get(f)!.add(h)
+  }
+  return [...byFreq.entries()]
+    .sort(([a], [b]) => b - a)
+    .flatMap(([f, hands]) => compactTokens(hands).map((t) => (f === 1 ? t : `${t}:${f}`)))
     .join(',')
 }

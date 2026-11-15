@@ -67,4 +67,16 @@ describe('formatRange', () => {
   it('omits frequency 1 and keeps fractional ones', () => {
     expect(formatRange(parseRange('AA,AKs:0.5'))).toBe('AA,AKs:0.5')
   })
+
+  it('writes compact notation', () => {
+    expect(formatRange(parseRange('77+,A9s+,KTo+'))).toBe('77+,A9s+,KTo+')
+    expect(formatRange(parseRange('99-66,A5s-A2s,KQs'))).toBe('99-66,A5s-A2s,KQs')
+    expect(formatRange(parseRange('AKs,AQs,AJs,A5s,A4s,QJo'))).toBe('AJs+,A5s-A4s,QJo')
+  })
+
+  it('round-trips every starter-like range', () => {
+    for (const text of ['22+,A2s+,K2s+,Q5s+,J7s+,T7s+,96s+,A2o+,K9o+', 'JJ-22,AQs-A6s,A3s-A2s:0.5,KJo:0.25']) {
+      expect(parseRange(formatRange(parseRange(text)))).toEqual(parseRange(text))
+    }
+  })
 })

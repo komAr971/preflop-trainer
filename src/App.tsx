@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { ChartEditor } from './components/ChartEditor'
 import { ChartsPage } from './components/ChartsPage'
 import { TrainerPage } from './components/TrainerPage'
 import { LANGUAGES, setLanguage } from './i18n'
@@ -38,7 +39,7 @@ export default function App() {
 
       {route.page === 'train' && <TrainerPage />}
       {route.page === 'charts' && <ChartsPage />}
-      {route.page === 'edit' && <p>{t('charts.editorSoon')}</p>}
+      {route.page === 'edit' && <ChartEditor key={route.chartId} chartId={route.chartId} />}
 
       <footer className="footer">v {__APP_VERSION__}</footer>
     </div>
