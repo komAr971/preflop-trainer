@@ -2,6 +2,7 @@ import Dexie, { type EntityTable } from 'dexie'
 import type { Action, ChartFile, SpotKey } from '../core/chart'
 import type { Hand } from '../core/hands'
 import type { ReviewItem } from '../core/review'
+import { sanitizeSettings, type Settings } from '../core/settings'
 import { starterChart } from '../data/starterChart'
 
 /** Built-in chart lives in code (always up to date) and is read-only. */
@@ -69,6 +70,11 @@ export interface Repo {
   /** Saves the attempt, the new review queue and the question counter in one transaction. */
   recordAttempt(attempt: Omit<AttemptRecord, 'id'>, reviews: ReviewItem[], counter: number): Promise<void>
   loadProgress(chartId: number): Promise<{ reviews: ReviewItem[]; counter: number }>
+  listAttempts(chartId: number): Promise<AttemptRecord[]>
+  /** Timestamps of all attempts across charts (daily goal, streak). */
+  attemptTimestamps(): Promise<number[]>
+  getSettings(): Promise<Settings>
+  saveSettings(settings: Settings): Promise<void>
 }
 
 const counterKey = (chartId: number) => `counter:${chartId}`
@@ -138,6 +144,22 @@ export function createDexieRepo(db = new TrainerDb()): Repo {
         reviews: rows.map(({ spotKey, hand, box, due }) => ({ spotKey, hand, box, due })),
         counter: typeof counter?.value === 'number' ? counter.value : 0,
       }
+    },
+
+    async listAttempts(chartId) {
+      return db.attempts.where('chartId').equals(chartId).toArray()
+    },
+
+    async attemptTimestamps() {
+      return (await db.attempts.orderBy('ts').keys()) as number[]
+    },
+
+    async getSettings() {
+      return sanitizeSettings((await db.meta.get('settings'))?.value)
+    },
+
+    async saveSettings(settings) {
+      await db.meta.put({ key: 'settings', value: settings })
     },
   }
 }

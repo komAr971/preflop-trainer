@@ -10,6 +10,7 @@ import { useTrainer } from './store/trainerStore'
 const actionLabel = { fold: /^(Фолд|Fold)/, call: /^(Колл|Call|Лимп|Limp)/, raise: /^(Рейз|Raise|3-бет|4-бет|3-bet|4-bet)/ }
 
 beforeEach(() => {
+  window.location.hash = ''
   setLanguage('ru')
   const { chart } = useTrainer.getState()
   act(() => useTrainer.getState().reset(chart, mulberry32(42)))
@@ -54,11 +55,16 @@ describe('App', () => {
     expect(useTrainer.getState().answer?.action).toBe('fold')
   })
 
-  it('switches language', async () => {
+  it('switches language in settings', async () => {
     const user = userEvent.setup()
+    window.location.hash = '#/settings'
     render(<App />)
     await user.click(screen.getByRole('button', { name: 'EN' }))
     expect(i18n.language).toBe('en')
-    expect(screen.getByRole('button', { name: /^Fold/ })).toBeInTheDocument()
+    act(() => {
+      window.location.hash = '#/'
+      window.dispatchEvent(new HashChangeEvent('hashchange'))
+    })
+    expect(await screen.findByRole('button', { name: /^Fold/ })).toBeInTheDocument()
   })
 })

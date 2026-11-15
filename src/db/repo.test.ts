@@ -1,5 +1,6 @@
 import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, it } from 'vitest'
+import { DEFAULT_SETTINGS } from '../core/settings'
 import { starterChart } from '../data/starterChart'
 import { STARTER_ID, TrainerDb, createDexieRepo, type Repo } from './repo'
 
@@ -58,5 +59,19 @@ describe('Dexie repo', () => {
       2,
     )
     expect(await repo.loadProgress(STARTER_ID)).toEqual({ reviews: [], counter: 2 })
+  })
+
+  it('lists attempts per chart and all timestamps', async () => {
+    const base = { spotKey: 'rfi:CO', hand: 'AA', action: 'raise' as const, correct: true }
+    await repo.recordAttempt({ ...base, chartId: 1, ts: 30 }, [], 1)
+    await repo.recordAttempt({ ...base, chartId: 2, ts: 10 }, [], 1)
+    expect(await repo.listAttempts(1)).toHaveLength(1)
+    expect(await repo.attemptTimestamps()).toEqual([10, 30])
+  })
+
+  it('stores settings with defaults', async () => {
+    expect(await repo.getSettings()).toEqual(DEFAULT_SETTINGS)
+    await repo.saveSettings({ ...DEFAULT_SETTINGS, dailyGoal: 40 })
+    expect((await repo.getSettings()).dailyGoal).toBe(40)
   })
 })

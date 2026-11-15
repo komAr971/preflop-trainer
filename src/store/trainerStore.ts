@@ -4,6 +4,7 @@ import type { Hand } from '../core/hands'
 import { dueItem, onAnswer, type ReviewItem } from '../core/review'
 import { buildScenario, type Scenario } from '../core/scenario'
 import { correctActions, dealCards, pickHand, type Card, type Rng } from '../core/trainer'
+import { DEFAULT_SETTINGS, type Settings } from '../core/settings'
 import { starterChart } from '../data/starterChart'
 import { STARTER_ID, type Repo } from '../db/repo'
 
@@ -31,8 +32,7 @@ interface TrainerState {
   chartId: number
   chart: Chart
   rng: Rng
-  threshold: number
-  borderlineShare: number
+  settings: Settings
   /** Questions answered with this chart (drives the review queue). */
   counter: number
   reviews: ReviewItem[]
@@ -45,6 +45,7 @@ interface TrainerState {
   init: (repo: Repo) => Promise<void>
   /** Switches training to another saved chart. */
   selectChart: (chartId: number) => Promise<void>
+  updateSettings: (patch: Partial<Settings>) => void
   /** In-memory reset (tests). */
   reset: (chart: Chart, rng?: Rng) => void
 }
@@ -58,7 +59,7 @@ function compile(file: unknown): Chart {
 const starter = compile(starterChart)
 
 function makeQuestion(
-  s: Pick<TrainerState, 'chart' | 'rng' | 'borderlineShare' | 'reviews' | 'counter'>,
+  s: Pick<TrainerState, 'chart' | 'rng' | 'settings' | 'reviews' | 'counter'>,
   id: number,
 ): Question {
   const { chart, rng } = s
@@ -71,7 +72,7 @@ function makeQuestion(
   } else {
     const keys = [...chart.spots.keys()]
     spotKey = keys[Math.floor(rng() * keys.length)]
-    hand = pickHand(chart.spots.get(spotKey)!, rng, s.borderlineShare)
+    hand = pickHand(chart.spots.get(spotKey)!, rng, s.settings.borderlineShare)
   }
   const spot = chart.spots.get(spotKey)!
   return {
@@ -85,22 +86,21 @@ function makeQuestion(
   }
 }
 
-const base = { chart: starter, rng: Math.random, borderlineShare: 0.7, reviews: [], counter: 0 }
+const base = { chart: starter, rng: Math.random, settings: DEFAULT_SETTINGS, reviews: [], counter: 0 }
 
 export const useTrainer = create<TrainerState>()((set, get) => ({
   ready: false,
   repo: null,
   chartId: STARTER_ID,
   ...base,
-  threshold: 0.25,
   question: makeQuestion(base, 0),
   answer: null,
   session: { total: 0, correct: 0 },
 
   submit: (action) => {
-    const { answer, question, threshold, session, counter, reviews, repo, chartId } = get()
+    const { answer, question, settings, session, counter, reviews, repo, chartId } = get()
     if (answer) return
-    const accepted = correctActions(question.freqs, threshold)
+    const accepted = correctActions(question.freqs, settings.threshold)
     const correct = accepted.includes(action)
     const nextCounter = counter + 1
     const nextReviews = onAnswer(reviews, question, correct, nextCounter)
@@ -127,6 +127,7 @@ export const useTrainer = create<TrainerState>()((set, get) => ({
   init: async (repo) => {
     set({ repo })
     try {
+      set({ settings: await repo.getSettings() })
       await get().selectChart(await repo.getActiveChartId())
     } catch (e) {
       // Storage unavailable (e.g. private mode): train without saving.
@@ -155,6 +156,14 @@ export const useTrainer = create<TrainerState>()((set, get) => ({
     await repo.setActiveChartId(id)
     const s = { ...get(), chart, reviews, counter }
     set({ chartId: id, chart, reviews, counter, question: makeQuestion(s, get().question.id + 1), answer: null })
+  },
+
+  updateSettings: (patch) => {
+    const settings = { ...get().settings, ...patch }
+    set({ settings })
+    get()
+      .repo?.saveSettings(settings)
+      .catch((e) => console.error('Failed to save settings', e))
   },
 
   reset: (chart, rng = Math.random) => {

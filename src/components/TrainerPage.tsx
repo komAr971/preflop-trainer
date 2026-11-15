@@ -8,6 +8,7 @@ import type { Action } from '../core/chart'
 import { fmtBb } from '../core/format'
 import type { Scenario } from '../core/scenario'
 import { useTrainer } from '../store/trainerStore'
+import { playSound } from '../ui/sound'
 
 const AUTO_NEXT_MS = 700
 
@@ -21,7 +22,8 @@ function useSpotText(s: Scenario): string {
 
 export function TrainerPage() {
   const { t } = useTranslation()
-  const { ready, question, answer, submit, next } = useTrainer()
+  const { ready, question, answer, submit, next, settings } = useTrainer()
+  const volume = settings.sound ? settings.volume : 0
   const spotText = useSpotText(question.scenario)
 
   // Keyboard: F/C/R to answer, Space/Enter for next.
@@ -40,6 +42,22 @@ export function TrainerPage() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [ready, answer, question, submit, next])
+
+  // Sounds: deal (+ chips when facing a bet) on each new hand, result on answer.
+  useEffect(() => {
+    if (!ready) return
+    playSound('deal', volume)
+    if (question.scenario.facingBb) {
+      const id = window.setTimeout(() => playSound('chip', volume), 180)
+      return () => window.clearTimeout(id)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only on a new hand, not on volume change
+  }, [ready, question.id])
+
+  useEffect(() => {
+    if (answer) playSound(answer.correct ? 'correct' : 'wrong', volume)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when an answer arrives
+  }, [answer])
 
   // Correct answers move on automatically.
   useEffect(() => {

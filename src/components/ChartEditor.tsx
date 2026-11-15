@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { parseChart, serializeChart, type Chart, type Sizings, type Spot, type SpotKey } from '../core/chart'
+import { parseChart, serializeChart, type Chart, type Sizings, type SpotKey } from '../core/chart'
 import {
   ALL_SPOTS,
   addSpot,
@@ -17,7 +17,9 @@ import { formatRange, type Range } from '../core/range'
 import { STARTER_ID } from '../db/repo'
 import { useTrainer } from '../store/trainerStore'
 import { navigate } from '../ui/useHashRoute'
+import { NumberField } from './NumberField'
 import { RangeGrid } from './RangeGrid'
+import { useSpotLabel } from './spotLabel'
 
 const PRESETS: { id: 'fold' | 'call' | 'raise'; brush: Brush }[] = [
   { id: 'raise', brush: { raise: 1, call: 0 } },
@@ -26,14 +28,6 @@ const PRESETS: { id: 'fold' | 'call' | 'raise'; brush: Brush }[] = [
 ]
 
 const SIZING_KEYS: (keyof Sizings)[] = ['openBb', 'sbOpenBb', 'threeBetIpX', 'threeBetOopX', 'fourBetX']
-
-function useSpotLabel() {
-  const { t } = useTranslation()
-  return (spot: Spot) =>
-    spot.kind === 'rfi'
-      ? t('spotLabel.rfi', { hero: spot.hero })
-      : t(`spotLabel.${spot.kind}`, { hero: spot.hero, villain: spot.villain })
-}
 
 function actionRangeText(chart: Chart, key: SpotKey, action: 'call' | 'raise'): string {
   const spot = chart.spots.get(key)
@@ -163,15 +157,12 @@ export function ChartEditor({ chartId }: { chartId: number }) {
           {SIZING_KEYS.map((k) => (
             <label key={k}>
               {t(`sizing.${k}`)}
-              <input
-                type="number"
-                min={1}
-                step={0.1}
+              <NumberField
                 value={chart.sizings[k]}
-                onChange={(e) => {
-                  const v = Number(e.target.value)
-                  if (v > 0) edit((c) => setSizings(c, { [k]: v }))
-                }}
+                min={1}
+                max={100}
+                step={0.1}
+                onChange={(v) => edit((c) => setSizings(c, { [k]: v }))}
               />
             </label>
           ))}
@@ -219,31 +210,25 @@ export function ChartEditor({ chartId }: { chartId: number }) {
             <span className="brush-mix">
               <label>
                 {t('actionName.raise')} %
-                <input
-                  type="number"
+                <NumberField
+                  integer
                   min={0}
                   max={100}
                   step={5}
                   value={Math.round(brush.raise * 100)}
-                  onChange={(e) => {
-                    const raise = Math.min(1, Math.max(0, Number(e.target.value) / 100))
-                    setBrush({ raise, call: Math.min(brush.call, 1 - raise) })
-                  }}
+                  onChange={(v) => setBrush({ raise: v / 100, call: Math.min(brush.call, 1 - v / 100) })}
                 />
               </label>
               {callAllowed && (
                 <label>
                   {t('actionName.call')} %
-                  <input
-                    type="number"
+                  <NumberField
+                    integer
                     min={0}
                     max={100}
                     step={5}
                     value={Math.round(brush.call * 100)}
-                    onChange={(e) => {
-                      const call = Math.min(1, Math.max(0, Number(e.target.value) / 100))
-                      setBrush({ call, raise: Math.min(brush.raise, 1 - call) })
-                    }}
+                    onChange={(v) => setBrush({ call: v / 100, raise: Math.min(brush.raise, 1 - v / 100) })}
                   />
                 </label>
               )}

@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react'
 
-export type Route = { page: 'train' } | { page: 'charts' } | { page: 'edit'; chartId: number }
+export type Route =
+  | { page: 'train' }
+  | { page: 'charts' }
+  | { page: 'edit'; chartId: number }
+  | { page: 'stats' }
+  | { page: 'settings' }
 
 export function parseHash(hash: string): Route {
   const parts = hash.replace(/^#\/?/, '').split('/')
@@ -8,12 +13,16 @@ export function parseHash(hash: string): Route {
     return { page: 'edit', chartId: Number(parts[1]) }
   }
   if (parts[0] === 'charts') return { page: 'charts' }
+  if (parts[0] === 'stats') return { page: 'stats' }
+  if (parts[0] === 'settings') return { page: 'settings' }
   return { page: 'train' }
 }
 
 export function hrefFor(route: Route): string {
   if (route.page === 'charts') return '#/charts'
   if (route.page === 'edit') return `#/charts/${route.chartId}`
+  if (route.page === 'stats') return '#/stats'
+  if (route.page === 'settings') return '#/settings'
   return '#/'
 }
 

@@ -9,5 +9,7 @@ describe('hash routes', () => {
     expect(parseHash('#/charts/0')).toEqual({ page: 'edit', chartId: 0 })
     expect(parseHash('#/nonsense')).toEqual({ page: 'train' })
     expect(hrefFor({ page: 'edit', chartId: 3 })).toBe('#/charts/3')
+    expect(parseHash('#/stats')).toEqual({ page: 'stats' })
+    expect(parseHash(hrefFor({ page: 'settings' }))).toEqual({ page: 'settings' })
   })
 })
