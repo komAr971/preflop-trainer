@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseChart, serializeChart, spotKey, type ChartFile } from './chart'
+import { parseChart, parseChartJson, serializeChart, spotKey, type ChartFile } from './chart'
 
 function file(spots: ChartFile['spots']): ChartFile {
   return {
@@ -98,5 +98,17 @@ describe('serializeChart', () => {
     const second = parseChart(JSON.parse(JSON.stringify(serializeChart(first.chart))))
     if (!second.ok) throw new Error(second.errors.join('\n'))
     expect(second.chart).toEqual(first.chart)
+  })
+})
+
+describe('parseChartJson', () => {
+  it('accepts a valid chart file', () => {
+    const res = parseChartJson(JSON.stringify(file([{ spot: { kind: 'rfi', hero: 'CO' }, actions: { raise: 'AA' } }])))
+    expect(res.ok).toBe(true)
+  })
+  it('reports broken JSON', () => {
+    const res = parseChartJson('{ "version": 1,')
+    expect(res.ok).toBe(false)
+    if (!res.ok) expect(res.errors[0]).toMatch(/^JSON/)
   })
 })

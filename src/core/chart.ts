@@ -158,3 +158,16 @@ export function serializeChart(chart: Chart): ChartFile {
     }),
   }
 }
+
+/** Parses a user-supplied JSON text (import). */
+export function parseChartJson(text: string): { ok: true; file: ChartFile; chart: Chart } | { ok: false; errors: string[] } {
+  let data: unknown
+  try {
+    data = JSON.parse(text)
+  } catch (e) {
+    return { ok: false, errors: [`JSON: ${(e as Error).message}`] }
+  }
+  const res = parseChart(data)
+  if (!res.ok) return res
+  return { ok: true, file: chartFileSchema.parse(data), chart: res.chart }
+}

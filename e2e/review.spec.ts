@@ -7,6 +7,7 @@ const NEXT = /^(Дальше|Next)/
 
 /** Strategy line "… for AKo: …" → hand + spot text identify the question. */
 async function questionId(page: Page) {
+  await expect(page.locator('[data-card]')).toHaveCount(2) // old cards leave during the deal animation
   const spot = (await page.getByTestId('spot-text').innerText()).replace(/(Повтор ошибки|Mistake review)$/, '')
   return spot + '|' + (await page.locator('[data-card]').evaluateAll((els) => els.map((e) => e.getAttribute('data-card')![0]).join('')))
 }
@@ -30,6 +31,8 @@ test('a mistake comes back as the 3rd question with a review badge', async ({ pa
   // Two more questions, then the missed hand must return.
   for (let i = 0; i < 2; i++) {
     await expect(page.locator('.badge-review')).toHaveCount(0)
+    // Rarely the same hand is dealt again at random; folding it again restarts its countdown.
+    test.skip(await questionId(page) === missed, 'missed hand was dealt again at random')
     await answer(page, FOLD)
     await expect(status(page)).toBeVisible()
     if ((await status(page).getAttribute('class'))!.includes('bad')) await answer(page, NEXT)
