@@ -4,6 +4,16 @@ import type { ChartFile } from '../core/chart'
  * Baseline 6-max 100bb ranges for NL2–NL10. Pure strategies (no mixing).
  * Not solver output: a simplified starting point the user verifies and edits.
  */
+const SEATS = ['UTG', 'HJ', 'CO', 'BTN', 'SB', 'BB'] as const
+
+/** Every opener × later 3-bettor pair. Blinds are out of position, so they 5-bet or fold. */
+const VS_4BET: ChartFile['spots'] = SEATS.flatMap((villain, i) =>
+  SEATS.slice(i + 1).map((hero) => ({
+    spot: { kind: 'vs4bet' as const, hero, villain },
+    actions: hero === 'SB' || hero === 'BB' ? { raise: 'QQ+,AK' } : { raise: 'QQ+,AK', call: 'JJ-TT,AQs' },
+  })),
+).filter((s) => s.spot.villain !== 'BB')
+
 export const starterChart: ChartFile = {
   version: 1,
   name: 'Базовый 6-max 100bb',
@@ -144,5 +154,9 @@ export const starterChart: ChartFile = {
       spot: { kind: 'vs3bet', hero: 'SB', villain: 'BB' },
       actions: { raise: 'JJ+,AK,AQs,A5s-A4s', call: 'TT-55,AJs-A8s,KQs-KTs,QJs-QTs,JTs,T9s,98s,AQo-AJo,KQo' },
     },
+
+    // ── vs 4-bet: hero 3-bet the opener and faces a 4-bet ──
+    // In position (hero not in the blinds): 5-bet QQ+/AK, call JJ-TT and AQs. Blinds (out of position): 5-bet or fold.
+    ...VS_4BET,
   ],
 }

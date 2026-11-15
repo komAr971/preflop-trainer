@@ -23,10 +23,13 @@ export interface Scenario {
   actions: ActionOption[]
   /** Size of the bet hero faces (open or 3-bet), if any. */
   facingBb?: number
+  /** Hero's 3-bet in vs4bet. */
+  heroThreeBetBb?: number
   /** Hero's own open in vs3bet. */
   heroOpenBb?: number
 }
 
+export const STACK_BB = 100
 const POSTFLOP_ORDER: Position[] = ['SB', 'BB', 'UTG', 'HJ', 'CO', 'BTN']
 const preIdx = (p: Position) => POSITIONS.indexOf(p)
 const isInPosition = (a: Position, b: Position) => POSTFLOP_ORDER.indexOf(a) > POSTFLOP_ORDER.indexOf(b)
@@ -51,6 +54,7 @@ export function buildScenario(compiled: CompiledSpot, sizings: Sizings): Scenari
   let actions: ActionOption[]
   let facingBb: number | undefined
   let heroOpenBb: number | undefined
+  let heroThreeBetBb: number | undefined
 
   switch (spot.kind) {
     case 'rfi': {
@@ -91,8 +95,25 @@ export function buildScenario(compiled: CompiledSpot, sizings: Sizings): Scenari
       ]
       break
     }
+    case 'vs4bet': {
+      const open = openSize(spot.villain, sizings)
+      const threeBet = threeBetSize(hero, spot.villain, open, sizings)
+      const fourBet = roundHalf(threeBet * sizings.fourBetX)
+      at(hero).betBb = threeBet
+      at(spot.villain).status = 'acted'
+      at(spot.villain).betBb = fourBet
+      facingBb = fourBet
+      heroThreeBetBb = threeBet
+      actions = [
+        { action: 'fold' },
+        { action: 'call', toBb: fourBet },
+        // 5-bet = all-in at 100bb.
+        { action: 'raise', toBb: STACK_BB },
+      ]
+      break
+    }
   }
 
   const potBb = seats.reduce((sum, s) => sum + s.betBb, 0)
-  return { spot, seats, potBb, actions, facingBb, heroOpenBb }
+  return { spot, seats, potBb, actions, facingBb, heroOpenBb, heroThreeBetBb }
 }

@@ -18,6 +18,7 @@ export const en: Messages = {
     rfi: 'Folded to you',
     vsOpen: '{{villain}} opened to {{amount}}bb',
     vs3bet: 'You opened {{open}}bb, {{villain}} 3-bet to {{amount}}bb',
+    vs4bet: '{{villain}} opened, you 3-bet to {{threeBet}}bb, {{villain}} 4-bet to {{amount}}bb',
   },
   table: {
     rollHint: 'Randomizer: the action is picked by a 1–100 roll',
@@ -32,6 +33,7 @@ export const en: Messages = {
     open: 'Raise {{amount}}bb',
     threeBet: '3-bet to {{amount}}bb',
     fourBet: '4-bet to {{amount}}bb',
+    allIn: 'All-in {{amount}}bb',
   },
   actionName: {
     fold: 'Fold',
@@ -61,11 +63,13 @@ export const en: Messages = {
     rfi: 'Raise first in (RFI)',
     vsOpen: 'Versus open',
     vs3bet: 'Versus 3-bet',
+    vs4bet: 'Versus 4-bet',
   },
   spotLabel: {
     rfi: 'RFI · {{hero}}',
     vsOpen: '{{hero}} vs {{villain}} open',
     vs3bet: '{{hero}} vs {{villain}} 3-bet',
+    vs4bet: '{{hero}} vs {{villain}} 4-bet',
   },
   sizing: {
     openBb: 'Open, bb',

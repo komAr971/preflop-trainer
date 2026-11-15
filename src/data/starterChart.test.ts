@@ -20,7 +20,7 @@ describe('starter chart', () => {
     expect(() => chart()).not.toThrow()
   })
 
-  it('covers every 6-max spot: 5 RFI, 15 vs open, 15 vs 3-bet', () => {
+  it('covers every 6-max spot: 5 RFI, 15 vs open, 15 vs 3-bet, 15 vs 4-bet', () => {
     const keys = new Set(chart().spots.keys())
     const expected: string[] = []
     POSITIONS.forEach((p, i) => {
@@ -28,6 +28,7 @@ describe('starter chart', () => {
       for (const later of POSITIONS.slice(i + 1)) {
         expected.push(spotKey({ kind: 'vsOpen', hero: later, villain: p }))
         if (p !== 'BB') expected.push(spotKey({ kind: 'vs3bet', hero: p, villain: later }))
+        if (p !== 'BB') expected.push(spotKey({ kind: 'vs4bet', hero: later, villain: p }))
       }
     })
     expect([...keys].sort()).toEqual(expected.sort())

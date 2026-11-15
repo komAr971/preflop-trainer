@@ -13,6 +13,10 @@ export const ALL_SPOTS: { key: SpotKey; spot: Spot }[] = (() => {
     if (hero === 'BB') return
     for (const villain of POSITIONS.slice(i + 1)) out.push({ kind: 'vs3bet', hero, villain })
   })
+  POSITIONS.forEach((villain, i) => {
+    if (villain === 'BB') return
+    for (const hero of POSITIONS.slice(i + 1)) out.push({ kind: 'vs4bet', hero, villain })
+  })
   return out.map((spot) => ({ key: spotKey(spot), spot }))
 })()
 

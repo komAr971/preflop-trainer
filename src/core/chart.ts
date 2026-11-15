@@ -25,6 +25,8 @@ const spotSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('rfi'), hero: positionSchema }),
   z.object({ kind: z.literal('vsOpen'), hero: positionSchema, villain: positionSchema }),
   z.object({ kind: z.literal('vs3bet'), hero: positionSchema, villain: positionSchema }),
+  /** Hero 3-bet the villain's open and faces a 4-bet. */
+  z.object({ kind: z.literal('vs4bet'), hero: positionSchema, villain: positionSchema }),
 ])
 export type Spot = z.infer<typeof spotSchema>
 export type SpotKey = string
@@ -89,6 +91,8 @@ function spotRuleError(spot: Spot, actions: Partial<Record<PlayableAction, strin
       return order(spot.villain) < order(spot.hero) ? null : 'opener must act before hero'
     case 'vs3bet':
       return order(spot.villain) > order(spot.hero) ? null : '3-bettor must act after hero'
+    case 'vs4bet':
+      return order(spot.villain) < order(spot.hero) ? null : 'opener (4-bettor) must act before hero'
   }
 }
 

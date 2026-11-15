@@ -16,7 +16,9 @@ export function useActionLabel() {
         return spot.kind === 'rfi' ? t('action.limp') : t('action.call', { amount })
       case 'raise':
         if (spot.kind === 'rfi') return t('action.open', { amount })
-        return spot.kind === 'vsOpen' ? t('action.threeBet', { amount }) : t('action.fourBet', { amount })
+        if (spot.kind === 'vsOpen') return t('action.threeBet', { amount })
+        if (spot.kind === 'vs4bet') return t('action.allIn', { amount })
+        return t('action.fourBet', { amount })
     }
   }
 }

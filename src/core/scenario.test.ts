@@ -81,3 +81,20 @@ describe('buildScenario: vs 3-bet', () => {
     expect(s.actions.at(-1)).toEqual({ action: 'raise', toBb: 22 })
   })
 })
+
+describe('buildScenario: vs 4-bet', () => {
+  it('BTN 3-bets CO open in position, CO 4-bets; hero can call or go all-in', () => {
+    const s = scenarioFor({ kind: 'vs4bet', hero: 'BTN', villain: 'CO' })
+    expect(seat(s, 'BTN')).toMatchObject({ status: 'hero', betBb: 7.5 })
+    expect(seat(s, 'CO')).toMatchObject({ status: 'acted', betBb: 16.5 })
+    expect(seat(s, 'BB')).toMatchObject({ status: 'folded', betBb: 1 })
+    expect(s.heroThreeBetBb).toBe(7.5)
+    expect(s.actions).toEqual([{ action: 'fold' }, { action: 'call', toBb: 16.5 }, { action: 'raise', toBb: 100 }])
+  })
+
+  it('BB 3-bets out of position (4x), then faces the 4-bet', () => {
+    const s = scenarioFor({ kind: 'vs4bet', hero: 'BB', villain: 'UTG' })
+    expect(s.heroThreeBetBb).toBe(10)
+    expect(s.facingBb).toBe(22)
+  })
+})

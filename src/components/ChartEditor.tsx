@@ -172,7 +172,7 @@ export function ChartEditor({ chartId }: { chartId: number }) {
       <label className="spot-select">
         {t('editor.spot')}
         <select value={spotKey} onChange={(e) => setSpotKey(e.target.value)}>
-          {(['rfi', 'vsOpen', 'vs3bet'] as const).map((kind) => (
+          {(['rfi', 'vsOpen', 'vs3bet', 'vs4bet'] as const).map((kind) => (
             <optgroup key={kind} label={t(`spotKind.${kind}`)}>
               {ALL_SPOTS.filter((s) => s.spot.kind === kind).map((s) => (
                 <option key={s.key} value={s.key}>

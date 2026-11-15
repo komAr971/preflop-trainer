@@ -126,3 +126,12 @@ describe('MP / HJ', () => {
     expect(positionName('CO', 'MP')).toBe('CO')
   })
 })
+
+describe('vs4bet rules', () => {
+  it('requires the 4-bettor (opener) to act before hero', () => {
+    expect(parseChart(file([{ spot: { kind: 'vs4bet', hero: 'BTN', villain: 'CO' }, actions: { raise: 'AA' } }])).ok).toBe(true)
+    expect(errorsOf(file([{ spot: { kind: 'vs4bet', hero: 'CO', villain: 'BTN' }, actions: { raise: 'AA' } }])).join()).toMatch(
+      /vs4bet:CO:BTN/,
+    )
+  })
+})

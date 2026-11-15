@@ -16,6 +16,7 @@ export const ru = {
     rfi: 'До тебя все сбросили',
     vsOpen: '{{villain}} открыл до {{amount}}bb',
     vs3bet: 'Ты открыл {{open}}bb, {{villain}} сделал 3-бет до {{amount}}bb',
+    vs4bet: '{{villain}} открыл, ты сделал 3-бет до {{threeBet}}bb, {{villain}} сделал 4-бет до {{amount}}bb',
   },
   table: {
     rollHint: 'Рандомизатор: действие выбирается по числу 1–100',
@@ -30,6 +31,7 @@ export const ru = {
     open: 'Рейз {{amount}}bb',
     threeBet: '3-бет до {{amount}}bb',
     fourBet: '4-бет до {{amount}}bb',
+    allIn: 'Олл-ин {{amount}}bb',
   },
   actionName: {
     fold: 'Фолд',
@@ -59,11 +61,13 @@ export const ru = {
     rfi: 'Первый вход (RFI)',
     vsOpen: 'Против опена',
     vs3bet: 'Против 3-бета',
+    vs4bet: 'Против 4-бета',
   },
   spotLabel: {
     rfi: 'RFI · {{hero}}',
     vsOpen: '{{hero}} против опена {{villain}}',
     vs3bet: '{{hero}} против 3-бета {{villain}}',
+    vs4bet: '{{hero}} против 4-бета {{villain}}',
   },
   sizing: {
     openBb: 'Опен, bb',

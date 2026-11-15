@@ -65,7 +65,7 @@ describe('trainer store', () => {
     expect(store().question.spotKey).toBe('rfi:UTG')
     expect(await repo.getActiveChartId()).toBe(id)
     await store().selectChart(STARTER_ID)
-    expect(store().chart.spots.size).toBe(35)
+    expect(store().chart.spots.size).toBe(50)
   })
 
   it('randomizer mode accepts only the action of the rolled interval', () => {

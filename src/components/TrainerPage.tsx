@@ -19,6 +19,9 @@ function useSpotText(s: Scenario): string {
   const { spot } = s
   if (spot.kind === 'rfi') return t('spot.rfi')
   if (spot.kind === 'vsOpen') return t('spot.vsOpen', { villain: pos(spot.villain), amount: fmtBb(s.facingBb!) })
+  if (spot.kind === 'vs4bet') {
+    return t('spot.vs4bet', { villain: pos(spot.villain), amount: fmtBb(s.facingBb!), threeBet: fmtBb(s.heroThreeBetBb!) })
+  }
   return t('spot.vs3bet', { villain: pos(spot.villain), amount: fmtBb(s.facingBb!), open: fmtBb(s.heroOpenBb!) })
 }
 
