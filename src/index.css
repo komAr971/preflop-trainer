@@ -623,6 +623,16 @@ kbd {
   cursor: pointer;
 }
 
+.badge-roll {
+  margin-left: 8px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
 /* ── table ── */
 .table {
   width: 100%;

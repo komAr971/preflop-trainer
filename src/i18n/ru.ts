@@ -18,6 +18,7 @@ export const ru = {
     vs3bet: 'Ты открыл {{open}}bb, {{villain}} сделал 3-бет до {{amount}}bb',
   },
   table: {
+    rollHint: 'Рандомизатор: действие выбирается по числу 1–100',
     review: 'Повтор ошибки',
     pot: 'Банк: {{amount}}bb',
     you: 'Ты',
@@ -120,6 +121,15 @@ export const ru = {
     middleName: 'Название второй позиции',
     middleNameHint: 'MP — как на GipsyTeam, HJ — как в GTO Wizard. Это одно и то же место.',
     training: 'Тренировка',
+    mixedMode: 'Смешанные руки',
+    mixedModes: {
+      threshold: 'Порог',
+      rng: 'Рандомизатор',
+    },
+    mixedModeHint: {
+      threshold: 'Верно любое действие с частотой не ниже порога',
+      rng: 'Над столом число 1–100. Интервалы: сначала рейз, потом колл, потом фолд. Верно только действие своего интервала',
+    },
     threshold: 'Порог верного ответа в смешанной руке',
     thresholdHint: 'Действие с частотой не ниже порога засчитывается как верное',
     borderline: 'Доля пограничных рук',
@@ -139,6 +149,7 @@ export const ru = {
     },
   },
   feedback: {
+    roll: 'выпало {{roll}}:',
     correct: 'Верно',
     wrong: 'Ошибка',
     strategy: 'Стратегия для {{hand}}:',

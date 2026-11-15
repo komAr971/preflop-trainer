@@ -5,6 +5,7 @@ describe('settings', () => {
   it('has the agreed defaults', () => {
     expect(DEFAULT_SETTINGS).toEqual({
       threshold: 0.25,
+      mixedMode: 'threshold',
       borderlineShare: 0.7,
       learnedWindow: 200,
       learnedThreshold: 0.9,

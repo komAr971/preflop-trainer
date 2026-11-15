@@ -20,6 +20,7 @@ export const en: Messages = {
     vs3bet: 'You opened {{open}}bb, {{villain}} 3-bet to {{amount}}bb',
   },
   table: {
+    rollHint: 'Randomizer: the action is picked by a 1–100 roll',
     review: 'Mistake review',
     pot: 'Pot: {{amount}}bb',
     you: 'You',
@@ -122,6 +123,15 @@ export const en: Messages = {
     middleName: 'Second seat name',
     middleNameHint: 'MP as in many training sites, HJ as in GTO Wizard. Same seat.',
     training: 'Training',
+    mixedMode: 'Mixed hands',
+    mixedModes: {
+      threshold: 'Threshold',
+      rng: 'Randomizer',
+    },
+    mixedModeHint: {
+      threshold: 'Any action at or above the threshold counts as correct',
+      rng: 'A 1–100 number is shown. Intervals: raise first, then call, then fold. Only the action of its interval is correct',
+    },
     threshold: 'Correct-answer threshold for mixed hands',
     thresholdHint: 'An action at or above this frequency counts as correct',
     borderline: 'Share of borderline hands',
@@ -141,6 +151,7 @@ export const en: Messages = {
     },
   },
   feedback: {
+    roll: 'rolled {{roll}}:',
     correct: 'Correct',
     wrong: 'Wrong',
     strategy: 'Strategy for {{hand}}:',

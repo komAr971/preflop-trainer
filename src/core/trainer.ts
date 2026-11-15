@@ -93,3 +93,36 @@ export function dealCards(hand: Hand, rng: Rng): [Card, Card] {
   if (hand.length === 2) return [hand[0] + SUITS[Math.min(s1, s2)], hand[1] + SUITS[Math.max(s1, s2)]]
   return [hand[0] + SUITS[s1], hand[1] + SUITS[s2]]
 }
+
+/** Randomizer order: raise, then call, then fold. */
+const ROLL_ORDER: Action[] = ['raise', 'call', 'fold']
+
+export interface RollInterval {
+  action: Action
+  from: number
+  to: number
+}
+
+/** Integer intervals on 1–100 for each action with non-zero frequency. */
+export function rollIntervals(freqs: Frequencies): RollInterval[] {
+  const out: RollInterval[] = []
+  let cum = 0
+  let from = 1
+  for (const action of ROLL_ORDER) {
+    if (freqs[action] <= 0) continue
+    cum += freqs[action]
+    const to = Math.min(100, Math.round(cum * 100))
+    if (to >= from) out.push({ action, from, to })
+    from = to + 1
+  }
+  if (out.length) out[out.length - 1].to = 100
+  return out
+}
+
+export function actionForRoll(freqs: Frequencies, roll: number): Action {
+  return rollIntervals(freqs).find((i) => roll >= i.from && roll <= i.to)!.action
+}
+
+export function rollD100(rng: Rng): number {
+  return 1 + Math.floor(rng() * 100)
+}

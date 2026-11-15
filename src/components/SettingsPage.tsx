@@ -87,15 +87,33 @@ export function SettingsPage() {
 
       <section>
         <h2>{t('settings.training')}</h2>
-        <Percent
-          label={t('settings.threshold')}
-          hint={t('settings.thresholdHint')}
-          value={settings.threshold}
-          min={5}
-          max={100}
-          step={5}
-          onChange={(threshold) => update({ threshold })}
-        />
+        <div className="setting">
+          <span>{t('settings.mixedMode')}</span>
+          <div className="lang" role="group" aria-label={t('settings.mixedMode')}>
+            {(['threshold', 'rng'] as const).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                aria-pressed={settings.mixedMode === mode}
+                onClick={() => update({ mixedMode: mode })}
+              >
+                {t(`settings.mixedModes.${mode}`)}
+              </button>
+            ))}
+          </div>
+          <small>{t(`settings.mixedModeHint.${settings.mixedMode}`)}</small>
+        </div>
+        {settings.mixedMode === 'threshold' && (
+          <Percent
+            label={t('settings.threshold')}
+            hint={t('settings.thresholdHint')}
+            value={settings.threshold}
+            min={5}
+            max={100}
+            step={5}
+            onChange={(threshold) => update({ threshold })}
+          />
+        )}
         <Percent
           label={t('settings.borderline')}
           hint={t('settings.borderlineHint')}

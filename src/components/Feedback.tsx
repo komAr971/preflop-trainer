@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { ACTIONS, type Frequencies } from '../core/chart'
+import { rollIntervals } from '../core/trainer'
 import type { Hand } from '../core/hands'
 import type { AnswerResult } from '../store/trainerStore'
 
@@ -20,6 +21,15 @@ export function Feedback({ answer, hand, freqs, onNext }: Props) {
         {ACTIONS.filter((a) => freqs[a] > 0)
           .map((a) => `${t(`actionName.${a}`)} ${Math.round(freqs[a] * 100)}%`)
           .join(' · ')}
+        {answer.roll !== undefined && rollIntervals(freqs).length > 1 && (
+          <span className="feedback-roll" data-testid="roll-explain">
+            {' — '}
+            {t('feedback.roll', { roll: answer.roll })}{' '}
+            {rollIntervals(freqs)
+              .map((i) => `${i.from}–${i.to} ${t(`actionName.${i.action}`)}`)
+              .join(', ')}
+          </span>
+        )}
       </span>
       <button type="button" className="next" onClick={onNext} autoFocus>
         {t('feedback.next')} <kbd>{t('feedback.nextHint')}</kbd>

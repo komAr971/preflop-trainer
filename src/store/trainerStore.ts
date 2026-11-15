@@ -3,7 +3,7 @@ import { parseChart, type Action, type Chart, type Frequencies, type SpotKey } f
 import type { Hand } from '../core/hands'
 import { dueItem, onAnswer, type ReviewItem } from '../core/review'
 import { buildScenario, type Scenario } from '../core/scenario'
-import { correctActions, dealCards, pickHand, type Card, type Rng } from '../core/trainer'
+import { actionForRoll, correctActions, dealCards, pickHand, rollD100, type Card, type Rng } from '../core/trainer'
 import { DEFAULT_SETTINGS, type Settings } from '../core/settings'
 import { starterChart } from '../data/starterChart'
 import { STARTER_ID, type Repo } from '../db/repo'
@@ -17,12 +17,16 @@ export interface Question {
   freqs: Frequencies
   /** Came from the mistakes queue. */
   isReview: boolean
+  /** Randomizer roll 1–100 (used in rng mode). */
+  roll: number
 }
 
 export interface AnswerResult {
   action: Action
   correct: boolean
   accepted: Action[]
+  /** The roll that decided the answer (rng mode). */
+  roll?: number
 }
 
 interface TrainerState {
@@ -83,6 +87,7 @@ function makeQuestion(
     scenario: buildScenario(spot, chart.sizings),
     freqs: spot.hands.get(hand)!,
     isReview: due !== undefined && due.spotKey === spotKey && due.hand === hand,
+    roll: rollD100(rng),
   }
 }
 
@@ -100,12 +105,15 @@ export const useTrainer = create<TrainerState>()((set, get) => ({
   submit: (action) => {
     const { answer, question, settings, session, counter, reviews, repo, chartId } = get()
     if (answer) return
-    const accepted = correctActions(question.freqs, settings.threshold)
+    const accepted =
+      settings.mixedMode === 'rng'
+        ? [actionForRoll(question.freqs, question.roll)]
+        : correctActions(question.freqs, settings.threshold)
     const correct = accepted.includes(action)
     const nextCounter = counter + 1
     const nextReviews = onAnswer(reviews, question, correct, nextCounter)
     set({
-      answer: { action, correct, accepted },
+      answer: { action, correct, accepted, roll: settings.mixedMode === 'rng' ? question.roll : undefined },
       session: { total: session.total + 1, correct: session.correct + (correct ? 1 : 0) },
       counter: nextCounter,
       reviews: nextReviews,

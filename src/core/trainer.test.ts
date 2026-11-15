@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { parseChart, type CompiledSpot, type Frequencies } from './chart'
 import { ALL_HANDS, combosOf } from './hands'
-import { correctActions, dealCards, isBorderline, isCorrect, mulberry32, pickHand } from './trainer'
+import { actionForRoll, correctActions, dealCards, isBorderline, isCorrect, mulberry32, pickHand, rollD100, rollIntervals } from './trainer'
 
 const f = (fold: number, call: number, raise: number): Frequencies => ({ fold, call, raise })
 
@@ -103,5 +103,42 @@ describe('dealCards', () => {
       for (let i = 0; i < 500; i++) seen.add(dealCards(hand, rng).join(''))
       expect(seen.size).toBe(combosOf(hand))
     }
+  })
+})
+
+describe('randomizer', () => {
+  it('maps a roll 1–100 to raise → call → fold intervals', () => {
+    const freqs = f(0.25, 0.15, 0.6)
+    expect(rollIntervals(freqs)).toEqual([
+      { action: 'raise', from: 1, to: 60 },
+      { action: 'call', from: 61, to: 75 },
+      { action: 'fold', from: 76, to: 100 },
+    ])
+    expect(actionForRoll(freqs, 1)).toBe('raise')
+    expect(actionForRoll(freqs, 60)).toBe('raise')
+    expect(actionForRoll(freqs, 61)).toBe('call')
+    expect(actionForRoll(freqs, 75)).toBe('call')
+    expect(actionForRoll(freqs, 76)).toBe('fold')
+    expect(actionForRoll(freqs, 100)).toBe('fold')
+  })
+
+  it('pure hands give the same action for every roll', () => {
+    for (const roll of [1, 50, 100]) expect(actionForRoll(f(0, 0, 1), roll)).toBe('raise')
+    expect(rollIntervals(f(1, 0, 0))).toEqual([{ action: 'fold', from: 1, to: 100 }])
+  })
+
+  it('handles float frequencies without gaps', () => {
+    const freqs = f(0.3, 0.1, 0.6) // 0.6 + 0.1 has float noise
+    expect(actionForRoll(freqs, 70)).toBe('call')
+    expect(actionForRoll(freqs, 71)).toBe('fold')
+  })
+
+  it('rolls 1–100', () => {
+    const rng = mulberry32(9)
+    const seen = new Set<number>()
+    for (let i = 0; i < 5000; i++) seen.add(rollD100(rng))
+    expect(Math.min(...seen)).toBe(1)
+    expect(Math.max(...seen)).toBe(100)
+    expect(seen.size).toBe(100)
   })
 })

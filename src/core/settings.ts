@@ -3,6 +3,8 @@ import { z } from 'zod'
 export const settingsSchema = z.object({
   /** Mixed hands: an action with at least this frequency counts as correct. */
   threshold: z.number().min(0.05).max(1).default(0.25),
+  /** Mixed hands: accept any action ≥ threshold, or only the action picked by a 1–100 roll. */
+  mixedMode: z.enum(['threshold', 'rng']).default('threshold'),
   /** Share of questions drawn from borderline hands. */
   borderlineShare: z.number().min(0).max(1).default(0.7),
   /** A spot is learned when accuracy over the last `learnedWindow` hands ≥ `learnedThreshold`. */

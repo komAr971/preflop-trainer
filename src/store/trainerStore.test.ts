@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { parseChart } from '../core/chart'
 import { REVIEW_INTERVALS } from '../core/review'
-import { correctActions, mulberry32 } from '../core/trainer'
+import { actionForRoll, correctActions, mulberry32 } from '../core/trainer'
 import { starterChart } from '../data/starterChart'
 import { STARTER_ID, TrainerDb, createDexieRepo } from '../db/repo'
 import { useTrainer } from './trainerStore'
@@ -66,5 +66,18 @@ describe('trainer store', () => {
     expect(await repo.getActiveChartId()).toBe(id)
     await store().selectChart(STARTER_ID)
     expect(store().chart.spots.size).toBe(35)
+  })
+
+  it('randomizer mode accepts only the action of the rolled interval', () => {
+    store().updateSettings({ mixedMode: 'rng' })
+    for (let i = 0; i < 30; i++) {
+      const q = store().question
+      const expected = actionForRoll(q.freqs, q.roll)
+      const other = q.scenario.actions.find((o) => o.action !== expected)!.action
+      store().submit(other)
+      expect(store().answer).toMatchObject({ correct: false, accepted: [expected], roll: q.roll })
+      store().next()
+    }
+    store().updateSettings({ mixedMode: 'threshold' })
   })
 })

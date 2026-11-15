@@ -78,6 +78,11 @@ export function TrainerPage() {
           <p className="spot-text" data-testid="spot-text">
             <b>{pos(question.scenario.spot.hero)}</b> · {spotText}
             {question.isReview && <span className="badge-review">{t('table.review')}</span>}
+            {settings.mixedMode === 'rng' && (
+              <span className="badge-roll" data-testid="roll" title={t('table.rollHint')}>
+                🎲 {question.roll}
+              </span>
+            )}
           </p>
           <Table scenario={question.scenario} cards={question.cards} questionId={question.id} />
           <ActionBar
