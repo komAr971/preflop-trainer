@@ -1,35 +1,95 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
+import { ActionBar } from './components/ActionBar'
+import { HOTKEYS } from './components/actionLabels'
+import { Feedback } from './components/Feedback'
+import { Table } from './components/Table'
+import type { Action } from './core/chart'
+import { fmtBb } from './core/format'
+import type { Scenario } from './core/scenario'
+import { LANGUAGES, setLanguage, type Language } from './i18n'
+import { useTrainer } from './store/trainerStore'
 
-function App() {
-  const [count, setCount] = useState(0)
+const AUTO_NEXT_MS = 700
 
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+function useSpotText(s: Scenario): string {
+  const { t } = useTranslation()
+  const { spot } = s
+  if (spot.kind === 'rfi') return t('spot.rfi')
+  if (spot.kind === 'vsOpen') return t('spot.vsOpen', { villain: spot.villain, amount: fmtBb(s.facingBb!) })
+  return t('spot.vs3bet', { villain: spot.villain, amount: fmtBb(s.facingBb!), open: fmtBb(s.heroOpenBb!) })
 }
 
-export default App
+export default function App() {
+  const { t, i18n } = useTranslation()
+  const { question, answer, session, submit, next } = useTrainer()
+  const spotText = useSpotText(question.scenario)
+
+  // Keyboard: F/C/R to answer, Space/Enter for next.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return
+      const key = e.key.toLowerCase()
+      if (!answer) {
+        const action = (Object.keys(HOTKEYS) as Action[]).find((a) => HOTKEYS[a] === key)
+        if (action && question.scenario.actions.some((o) => o.action === action)) submit(action)
+      } else if (key === ' ' || key === 'enter') {
+        e.preventDefault()
+        next()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [answer, question, submit, next])
+
+  // Correct answers move on automatically.
+  useEffect(() => {
+    if (!answer?.correct) return
+    const id = window.setTimeout(next, AUTO_NEXT_MS)
+    return () => window.clearTimeout(id)
+  }, [answer, next])
+
+  const percent = session.total ? Math.round((session.correct / session.total) * 100) : 0
+
+  return (
+    <div className="app">
+      <header className="header">
+        <h1>{t('app.title')}</h1>
+        <span className="score" data-testid="score">
+          {t('app.score', { correct: session.correct, total: session.total })}
+          {session.total > 0 && ` (${percent}%)`}
+        </span>
+        <div className="lang" role="group" aria-label={t('app.language')}>
+          {LANGUAGES.map((lang: Language) => (
+            <button
+              key={lang}
+              type="button"
+              aria-pressed={i18n.language === lang}
+              onClick={() => setLanguage(lang)}
+            >
+              {lang.toUpperCase()}
+            </button>
+          ))}
+        </div>
+      </header>
+
+      <main className="main">
+        <p className="spot-text" data-testid="spot-text">
+          <b>{question.scenario.spot.hero}</b> · {spotText}
+        </p>
+        <Table scenario={question.scenario} cards={question.cards} questionId={question.id} />
+        <ActionBar
+          spot={question.scenario.spot}
+          options={question.scenario.actions}
+          disabled={answer !== null}
+          chosen={answer?.action}
+          accepted={answer?.accepted}
+          onAction={submit}
+        />
+        <div className="feedback-slot">
+          {answer && <Feedback answer={answer} hand={question.hand} freqs={question.freqs} onNext={next} />}
+        </div>
+      </main>
+    </div>
+  )
+}
