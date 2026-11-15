@@ -54,6 +54,11 @@ export function BetSizer({ min, max, value, onChange, onSubmit, disabled }: Prop
             const v = Number(e.target.value.replace(',', '.'))
             if (e.target.value.trim() !== '' && Number.isFinite(v) && v >= min && v <= max) onChange(v)
           }}
+          // Select the current value so a new size can be typed over it (also on mobile).
+          onFocus={(e) => {
+            const el = e.currentTarget
+            requestAnimationFrame(() => el.select())
+          }}
           onBlur={() => setText(fmtBb(value))}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {

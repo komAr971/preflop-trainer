@@ -103,14 +103,15 @@ export function TrainerPage() {
             )}
           </p>
           <Table scenario={question.scenario} cards={question.cards} questionId={question.id} />
-          {raiseNeedsSize && (
+          {/* Always present when sizes are typed, so the layout doesn't jump; inactive for all-ins. */}
+          {settings.sizeInput && (
             <BetSizer
               min={question.scenario.minRaiseBb}
               max={100}
-              value={raiseSize}
+              value={raiseNeedsSize ? raiseSize : 100}
               onChange={setRaiseSize}
               onSubmit={() => act('raise')}
-              disabled={answer !== null}
+              disabled={answer !== null || !raiseNeedsSize}
             />
           )}
           <ActionBar

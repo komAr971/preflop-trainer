@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ChartEditor } from './components/ChartEditor'
 import { ChartsPage } from './components/ChartsPage'
@@ -9,7 +10,7 @@ import { useTrainer } from './store/trainerStore'
 import { hrefFor, useHashRoute, type Route } from './ui/useHashRoute'
 
 const TABS: { route: Route; label: string; matches: Route['page'][] }[] = [
-  { route: { page: 'train' }, label: 'nav.train', matches: ['train', 'draw'] },
+  { route: { page: 'train' }, label: 'nav.train', matches: ['train'] },
   { route: { page: 'charts' }, label: 'nav.charts', matches: ['charts', 'edit'] },
   { route: { page: 'stats' }, label: 'nav.stats', matches: ['stats'] },
   { route: { page: 'settings' }, label: 'nav.settings', matches: ['settings'] },
@@ -18,6 +19,9 @@ const TABS: { route: Route; label: string; matches: Route['page'][] }[] = [
 export default function App() {
   const { t } = useTranslation()
   const route = useHashRoute()
+  const [menuOpen, setMenuOpen] = useState(false)
+  // Navigating closes the mobile menu.
+  useEffect(() => setMenuOpen(false), [route])
   const session = useTrainer((s) => s.session)
   const soundOn = useTrainer((s) => s.settings.sound)
   const chartId = useTrainer((s) => s.chartId)
@@ -25,10 +29,19 @@ export default function App() {
   const percent = session.total ? Math.round((session.correct / session.total) * 100) : 0
 
   return (
-    <div className="app">
+    <div className={`app page-${route.page}`}>
       <header className="header">
+        <button
+          type="button"
+          className="burger"
+          aria-label={t('app.menu')}
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen((o) => !o)}
+        >
+          {menuOpen ? '✕' : '☰'}
+        </button>
         <h1>{t('app.title')}</h1>
-        <nav className="tabs">
+        <nav className={`tabs ${menuOpen ? 'is-open' : ''}`}>
           {TABS.map((tab) => (
             <a
               key={tab.label}
@@ -38,6 +51,10 @@ export default function App() {
               {t(tab.label)}
             </a>
           ))}
+          <a href={hrefFor({ page: 'draw' })} className="menu-only" aria-current={route.page === 'draw' ? 'page' : undefined}>
+            ✏️ {t('draw.open')}
+          </a>
+          <span className="menu-only menu-version">v {__APP_VERSION__}</span>
         </nav>
         <span className="score" data-testid="score">
           {t('app.score', { correct: session.correct, total: session.total })}

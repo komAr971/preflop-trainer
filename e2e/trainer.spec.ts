@@ -22,7 +22,7 @@ test('plays a few hands', async ({ page }, info) => {
 test('raise with the bet sizer; a mistake shows why and the chart', async ({ page }, info) => {
   await page.goto('/')
   // Skip hands where raising is an all-in (no sizer).
-  for (let i = 0; i < 20 && (await page.getByRole('slider').count()) === 0; i++) {
+  for (let i = 0; i < 20 && (await page.getByRole('slider').isDisabled()); i++) {
     await page.locator('.action-bar .action').first().click()
     await page.keyboard.press('Space')
   }

@@ -1,5 +1,6 @@
 export const ru = {
   app: {
+    menu: 'Меню',
     mute: 'Выключить звук',
     unmute: 'Включить звук',
     title: 'Тренажёр префлопа',

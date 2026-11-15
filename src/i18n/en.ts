@@ -2,6 +2,7 @@ import type { Messages } from './index'
 
 export const en: Messages = {
   app: {
+    menu: 'Menu',
     mute: 'Mute sounds',
     unmute: 'Unmute sounds',
     title: 'Preflop Trainer',

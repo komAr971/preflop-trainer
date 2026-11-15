@@ -35,6 +35,10 @@ export function NumberField({ value, min, max, step, integer, ariaLabel, onChang
           onChange(v)
         }
       }}
+      onFocus={(e) => {
+        const el = e.currentTarget
+        requestAnimationFrame(() => el.select())
+      }}
       onBlur={() => setText(String(value))}
     />
   )
