@@ -14,7 +14,7 @@ import {
   type Brush,
 } from '../core/chartEdit'
 import { formatRange, type Range } from '../core/range'
-import { STARTER_ID } from '../db/repo'
+import { isBuiltin } from '../db/repo'
 import { useTrainer } from '../store/trainerStore'
 import { navigate } from '../ui/useHashRoute'
 import { NumberField } from './NumberField'
@@ -57,7 +57,7 @@ export function ChartEditor({ chartId }: { chartId: number }) {
 
   useEffect(() => {
     if (!repo) return
-    if (chartId === STARTER_ID) {
+    if (isBuiltin(chartId)) {
       setLoadError(t('editor.readOnly'))
       return
     }

@@ -62,3 +62,25 @@ describe('starter chart', () => {
     }
   })
 })
+
+describe('Greenline built-in charts', () => {
+  it('parse and match the percentages printed on the slides', async () => {
+    const { greenlineStandard, greenlineRfiTight, greenlineRfiWide } = await import('./greenline2026')
+    for (const f of [greenlineRfiTight, greenlineRfiWide]) expect(parseChart(f).ok).toBe(true)
+    const res = parseChart(greenlineStandard)
+    if (!res.ok) throw new Error(res.errors.join('\n'))
+    const pct = (key: string, a: 'raise' | 'call') => {
+      const s = res.chart.spots.get(key)!
+      return (ALL_HANDS.reduce((t, h) => t + combosOf(h) * s.hands.get(h)![a], 0) / 1326) * 100
+    }
+    expect(pct('vsOpen:BTN:UTG', 'raise')).toBeCloseTo(6.49, 1)
+    expect(pct('vsOpen:BTN:HJ', 'raise')).toBeCloseTo(7.99, 1)
+    expect(pct('vsOpen:BTN:CO', 'raise')).toBeCloseTo(11.1, 1)
+    expect(pct('vsOpen:SB:UTG', 'raise')).toBeCloseTo(4.68, 1)
+    expect(pct('vsOpen:BB:CO', 'raise')).toBeCloseTo(7.77, 1)
+    expect(pct('vsOpen:BB:BTN', 'call')).toBeCloseTo(16.7, 0)
+    expect(pct('vsOpen:BB:SB', 'raise')).toBeCloseTo(19.5, 0)
+    expect(pct('vsLimp:HJ:1', 'raise')).toBeCloseTo(10.7, 1)
+    expect(pct('vsLimp:BB:1', 'raise')).toBeCloseTo(13.7, 1)
+  })
+})

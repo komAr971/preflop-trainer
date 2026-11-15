@@ -3,10 +3,21 @@ import type { Action, ChartFile, SpotKey } from '../core/chart'
 import type { Hand } from '../core/hands'
 import type { ReviewItem } from '../core/review'
 import { sanitizeSettings, type Settings } from '../core/settings'
+import { greenlineRfiTight, greenlineRfiWide, greenlineStandard } from '../data/greenline2026'
 import { starterChart } from '../data/starterChart'
 
-/** Built-in chart lives in code (always up to date) and is read-only. */
+/** Built-in charts live in code (always up to date), are read-only and use ids ≤ 0. */
 export const STARTER_ID = 0
+
+export const BUILTIN_CHARTS: { id: number; file: ChartFile }[] = [
+  { id: STARTER_ID, file: starterChart },
+  { id: -1, file: greenlineStandard },
+  { id: -2, file: greenlineRfiTight },
+  { id: -3, file: greenlineRfiWide },
+]
+
+export const isBuiltin = (id: number): boolean => id <= 0
+const builtin = (id: number) => BUILTIN_CHARTS.find((c) => c.id === id)
 
 export interface ChartRecord {
   id: number
@@ -99,18 +110,18 @@ export function createDexieRepo(db = new TrainerDb()): Repo {
     async listCharts() {
       const own = await db.charts.orderBy('name').toArray()
       return [
-        { id: STARTER_ID, name: starterChart.name, builtin: true, updatedAt: 0 },
+        ...BUILTIN_CHARTS.map((c) => ({ id: c.id, name: c.file.name, builtin: true, updatedAt: 0 })),
         ...own.map((c) => ({ id: c.id, name: c.name, builtin: false, updatedAt: c.updatedAt })),
       ]
     },
 
     async getChart(id) {
-      if (id === STARTER_ID) return starterChart
+      if (isBuiltin(id)) return builtin(id)?.file
       return (await db.charts.get(id))?.file
     },
 
     async saveChart(file, id) {
-      if (id === STARTER_ID) throw new Error('Built-in chart is read-only')
+      if (id !== undefined && isBuiltin(id)) throw new Error('Built-in chart is read-only')
       const record = { name: file.name, file, updatedAt: Date.now() }
       if (id === undefined) return db.charts.add(record as ChartRecord)
       await db.charts.put({ ...record, id })
@@ -118,7 +129,7 @@ export function createDexieRepo(db = new TrainerDb()): Repo {
     },
 
     async deleteChart(id) {
-      if (id === STARTER_ID) throw new Error('Built-in chart cannot be deleted')
+      if (isBuiltin(id)) throw new Error('Built-in chart cannot be deleted')
       await db.transaction('rw', [db.charts, db.attempts, db.reviews, db.meta, db.drawings], async () => {
         await db.charts.delete(id)
         await db.drawings.where('chartId').equals(id).delete()
@@ -133,7 +144,8 @@ export function createDexieRepo(db = new TrainerDb()): Repo {
     async getActiveChartId() {
       const value = (await db.meta.get('activeChartId'))?.value
       if (typeof value !== 'number') return STARTER_ID
-      if (value !== STARTER_ID && !(await db.charts.get(value))) return STARTER_ID
+      if (isBuiltin(value)) return builtin(value) ? value : STARTER_ID
+      if (!(await db.charts.get(value))) return STARTER_ID
       return value
     },
 

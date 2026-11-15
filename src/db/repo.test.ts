@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { DEFAULT_SETTINGS } from '../core/settings'
 import { starterChart } from '../data/starterChart'
-import { STARTER_ID, TrainerDb, createDexieRepo, type Repo } from './repo'
+import { BUILTIN_CHARTS, STARTER_ID, TrainerDb, createDexieRepo, type Repo } from './repo'
 
 let repo: Repo
 let n = 0
@@ -25,7 +25,7 @@ describe('Dexie repo', () => {
     expect(id).toBeGreaterThan(0)
     await repo.saveChart({ ...myChart, name: 'Переименован' }, id)
     const list = await repo.listCharts()
-    expect(list.map((c) => c.name)).toEqual([starterChart.name, 'Переименован'])
+    expect(list.filter((c) => !c.builtin).map((c) => c.name)).toEqual(['Переименован'])
     expect((await repo.getChart(id))?.name).toBe('Переименован')
   })
 
@@ -80,5 +80,16 @@ describe('Dexie repo', () => {
     await repo.recordDrawing({ chartId: 1, spotKey: 'rfi:CO', score: 80, ts: 1 })
     await repo.recordDrawing({ chartId: 2, spotKey: 'rfi:CO', score: 70, ts: 3 })
     expect((await repo.listDrawings(1)).map((d) => d.score)).toEqual([80, 90])
+  })
+
+  it('ships the Greenline charts as read-only built-ins that can be activated', async () => {
+    const list = await repo.listCharts()
+    expect(list.filter((c) => c.builtin).map((c) => c.id)).toEqual(BUILTIN_CHARTS.map((c) => c.id))
+    expect((await repo.getChart(-1))?.name).toMatch(/Greenline/)
+    await expect(repo.saveChart(starterChart, -1)).rejects.toThrow()
+    await repo.setActiveChartId(-1)
+    expect(await repo.getActiveChartId()).toBe(-1)
+    await repo.setActiveChartId(-99)
+    expect(await repo.getActiveChartId()).toBe(STARTER_ID)
   })
 })

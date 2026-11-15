@@ -47,7 +47,7 @@ describe('ChartsPage', () => {
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent('bad.json')
     expect(alert).toHaveTextContent('rfi:CO raise: invalid token "QXs"')
-    expect(await repo.listCharts()).toHaveLength(1)
+    expect((await repo.listCharts()).filter((c) => !c.builtin)).toHaveLength(0)
   })
 
   it('copies, trains with and deletes a chart', async () => {
