@@ -54,4 +54,6 @@ PWA для заучивания префлоп-чартов NLHE 6-max 100bb с 
 - **v2**: «Нарисуй чарт», рандомайзер частот (1–100), споты против 4-бета и против лимпа
 
 ## Репозиторий
-- `~/Projects/preflop-trainer`, приватный GitHub-репозиторий `preflop-trainer`, деплой на GitHub Pages
+- `~/Projects/preflop-trainer`, публичный репозиторий https://github.com/komAr971/preflop-trainer (Pages на бесплатном тарифе требует публичный репо)
+- Сайт: https://komar971.github.io/preflop-trainer/ — деплой из `main` после зелёного CI
+- Почта коммитов в этом репо — GitHub noreply (локальный `user.email`)
