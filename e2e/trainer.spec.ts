@@ -9,7 +9,8 @@ test('plays a few hands', async ({ page }, info) => {
   await page.screenshot({ path: `test-results/table-${info.project.name}.png`, fullPage: true })
 
   for (let i = 0; i < 3; i++) {
-    await page.getByRole('button', { name: /^(Фолд|Fold)/ }).click()
+    // First available action (BB facing limps has no Fold button).
+    await page.locator('.action-bar .action').first().click()
     await expect(page.getByRole('status')).toBeVisible()
     if (i === 0) await page.screenshot({ path: `test-results/feedback-${info.project.name}.png`, fullPage: true })
     await page.getByRole('button', { name: /^(Дальше|Next)/ }).click({ timeout: 2000 }).catch(() => {})

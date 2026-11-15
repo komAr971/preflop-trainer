@@ -3,7 +3,8 @@ import { expect, test } from '@playwright/test'
 test('stats reflect played hands; settings persist', async ({ page }, info) => {
   await page.goto('/')
   for (let i = 0; i < 5; i++) {
-    await page.getByRole('button', { name: /^(Фолд|Fold)/ }).click()
+    // First available action (BB facing limps has no Fold button).
+    await page.locator('.action-bar .action').first().click()
     await expect(page.getByRole('status')).toBeVisible()
     await page.keyboard.press('Space')
     await expect(page.getByRole('status')).toBeHidden()
