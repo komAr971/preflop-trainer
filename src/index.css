@@ -704,6 +704,19 @@ kbd {
   fill: var(--suit-c);
 }
 
+/* Portrait phone table fills the width; keep it within one screen height. */
+.table-portrait {
+  max-height: 62vh;
+}
+
+.table-portrait .seat-pos {
+  font-size: 15px;
+}
+
+.table-portrait .seat-stack {
+  font-size: 12px;
+}
+
 /* ── actions ── */
 .action-bar {
   display: grid;
@@ -813,15 +826,5 @@ kbd {
 @media (max-width: 520px) {
   .action-bar {
     grid-auto-flow: row;
-  }
-  .seat-pos {
-    font-size: 22px;
-  }
-  .seat-stack {
-    font-size: 18px;
-  }
-  .bet-amount,
-  .pot {
-    font-size: 20px;
   }
 }

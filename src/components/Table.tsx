@@ -1,33 +1,19 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { useTranslation } from 'react-i18next'
-import { POSITIONS, type Position } from '../core/chart'
 import { fmtBb } from '../core/format'
 import type { Scenario, SeatState } from '../core/scenario'
 import type { Card } from '../core/trainer'
-import { CARD_H, CARD_W, PlayingCard } from './PlayingCard'
+import { useMediaQuery } from '../ui/useMediaQuery'
+import { CARD_W } from './cardSize'
+import { PlayingCard } from './PlayingCard'
+import { LANDSCAPE, PORTRAIT, PORTRAIT_QUERY, heroCardsY, slotOf, type Layout } from './tableLayout'
 
 const STACK_BB = 100
-const CX = 400
-const CY = 250
 
-/** Screen slots clockwise from the bottom (hero). */
-const SLOTS = [
-  { seat: [400, 468], bet: [400, 330] },
-  { seat: [92, 360], bet: [215, 318] },
-  { seat: [92, 140], bet: [215, 182] },
-  { seat: [400, 34], bet: [400, 140] },
-  { seat: [708, 140], bet: [585, 182] },
-  { seat: [708, 360], bet: [585, 318] },
-] as const
-
-function slotOf(position: Position, hero: Position): number {
-  return (POSITIONS.indexOf(position) - POSITIONS.indexOf(hero) + 6) % 6
-}
-
-
-function Seat({ seat, slot }: { seat: SeatState; slot: number }) {
+function Seat({ seat, slot, layout }: { seat: SeatState; slot: number; layout: Layout }) {
   const { t } = useTranslation()
-  const [x, y] = SLOTS[slot].seat
+  const [x, y] = layout.slots[slot].seat
+  const [w, h] = layout.seatSize
   const isHero = seat.status === 'hero'
   return (
     <g
@@ -36,7 +22,7 @@ function Seat({ seat, slot }: { seat: SeatState; slot: number }) {
       data-position={seat.position}
       data-status={seat.status}
     >
-      <rect x={-68} y={-26} width={136} height={52} rx={26} className="seat-box" />
+      <rect x={-w / 2} y={-h / 2} width={w} height={h} rx={h / 2} className="seat-box" />
       <text y={-4} textAnchor="middle" className="seat-pos">
         {seat.position}
         {isHero ? ` · ${t('table.you')}` : ''}
@@ -48,12 +34,13 @@ function Seat({ seat, slot }: { seat: SeatState; slot: number }) {
   )
 }
 
-function Bet({ amount, slot }: { amount: number; slot: number }) {
-  const [x, y] = SLOTS[slot].bet
+function Bet({ amount, slot, layout }: { amount: number; slot: number; layout: Layout }) {
+  const [x, y] = layout.slots[slot].bet
+  const [sx, sy] = layout.slots[slot].seat
   return (
     <motion.g
       className="bet"
-      initial={{ opacity: 0, x: (SLOTS[slot].seat[0] - x) * 0.6, y: (SLOTS[slot].seat[1] - y) * 0.6 }}
+      initial={{ opacity: 0, x: (sx - x) * 0.6, y: (sy - y) * 0.6 }}
       animate={{ opacity: 1, x: 0, y: 0 }}
       transition={{ duration: 0.25 }}
     >
@@ -68,12 +55,10 @@ function Bet({ amount, slot }: { amount: number; slot: number }) {
   )
 }
 
-function DealerButton({ slot }: { slot: number }) {
-  const [sx, sy] = SLOTS[slot].seat
-  const x = sx + (CX - sx) * 0.22 + (slot === 0 || slot === 3 ? 90 : 0)
-  const y = sy + (CY - sy) * 0.22 + (slot === 0 || slot === 3 ? 0 : 38)
+function DealerButton({ slot, layout }: { slot: number; layout: Layout }) {
+  const [x, y] = layout.slots[slot].dealer
   return (
-    <g transform={`translate(${x} ${y})`} className="dealer">
+    <g transform={`translate(${x} ${y})`} className="dealer" data-testid="dealer">
       <circle r={13} className="dealer-btn" />
       <text y={5} textAnchor="middle" className="dealer-text">
         D
@@ -90,31 +75,38 @@ interface Props {
 
 export function Table({ scenario, cards, questionId }: Props) {
   const { t } = useTranslation()
+  const layout = useMediaQuery(PORTRAIT_QUERY) ? PORTRAIT : LANDSCAPE
   const hero = scenario.spot.hero
-  const btnSlot = slotOf('BTN', hero)
-  const cardsY = SLOTS[0].seat[1] - 30 - CARD_H
+  const [cx, cy] = layout.center
+  const cw = CARD_W * layout.cardScale
+  const cardsY = heroCardsY(layout)
 
   return (
-    <svg viewBox="0 0 800 500" className="table" role="img" aria-label={t('app.title')}>
-      <ellipse cx={CX} cy={CY} rx={330} ry={175} className="rail" />
-      <ellipse cx={CX} cy={CY} rx={310} ry={157} className="felt" />
-      <text x={CX} y={CY + 6} textAnchor="middle" className="pot" data-testid="pot">
+    <svg
+      viewBox={`0 0 ${layout.width} ${layout.height}`}
+      className={`table table-${layout.name}`}
+      role="img"
+      aria-label={t('app.title')}
+      data-layout={layout.name}
+    >
+      <ellipse cx={cx} cy={cy} rx={layout.rail[0]} ry={layout.rail[1]} className="rail" />
+      <ellipse cx={cx} cy={cy} rx={layout.felt[0]} ry={layout.felt[1]} className="felt" />
+      <text x={cx} y={cy + 6} textAnchor="middle" className="pot" data-testid="pot">
         {t('table.pot', { amount: fmtBb(scenario.potBb) })}
       </text>
 
-      {scenario.seats.map((seat) => {
-        const slot = slotOf(seat.position, hero)
-        return <Seat key={seat.position} seat={seat} slot={slot} />
-      })}
+      {scenario.seats.map((seat) => (
+        <Seat key={seat.position} seat={seat} slot={slotOf(seat.position, hero)} layout={layout} />
+      ))}
 
-      <DealerButton slot={btnSlot} />
+      <DealerButton slot={slotOf('BTN', hero)} layout={layout} />
 
       <AnimatePresence mode="popLayout">
         <g key={questionId}>
           {scenario.seats
             .filter((s) => s.betBb > 0)
             .map((s) => (
-              <Bet key={s.position} amount={s.betBb} slot={slotOf(s.position, hero)} />
+              <Bet key={s.position} amount={s.betBb} slot={slotOf(s.position, hero)} layout={layout} />
             ))}
           <motion.g
             initial={{ opacity: 0, y: -40 }}
@@ -122,8 +114,8 @@ export function Table({ scenario, cards, questionId }: Props) {
             transition={{ duration: 0.25 }}
             data-testid="hero-cards"
           >
-            <PlayingCard card={cards[0]} x={CX - CARD_W - 4} y={cardsY} />
-            <PlayingCard card={cards[1]} x={CX + 4} y={cardsY} />
+            <PlayingCard card={cards[0]} x={cx - cw - 4} y={cardsY} scale={layout.cardScale} />
+            <PlayingCard card={cards[1]} x={cx + 4} y={cardsY} scale={layout.cardScale} />
           </motion.g>
         </g>
       </AnimatePresence>
