@@ -1,162 +1,123 @@
-import { useCallback, useEffect, useState } from 'react'
-import { useDecisionTimer } from './useDecisionTimer'
+import { useCallback, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ActionBar } from './ActionBar'
-import { HOTKEYS, needsSize } from './actionLabels'
-import { BetSizer } from './BetSizer'
 import { Feedback } from './Feedback'
-import { Table } from './Table'
-import type { Action } from '../core/chart'
-import { PRESET_MULTIPLIERS, presetSize } from '../core/betPresets'
-import { fmtBb } from '../core/format'
-import type { Scenario } from '../core/scenario'
+import { TablePanel, type KeyHandler } from './TablePanel'
 import { useTrainer } from '../store/trainerStore'
-import { usePositionName } from './usePositionName'
-import { playSound, type SoundKind } from '../ui/sound'
+import { useMediaQuery } from '../ui/useMediaQuery'
 
-const AUTO_NEXT_MS = 700
+/** Several tables only fit on wide screens; narrower windows play one (the choice comes back when wider). */
+export const MULTI_QUERY = '(min-width: 900px)'
+const COUNTS = [1, 2, 3, 4] as const
 
-function useSpotText(s: Scenario): string {
+/** Full explanation of one table's mistake; the other tables' clocks are paused while it is open. */
+function ReviewPanel({ index }: { index: number }) {
   const { t } = useTranslation()
-  const pos = usePositionName()
-  const { spot } = s
-  if (spot.kind === 'rfi') return t('spot.rfi')
-  if (spot.kind === 'vsOpen') return t('spot.vsOpen', { villain: pos(spot.villain), amount: fmtBb(s.facingBb!) })
-  if (spot.kind === 'vsLimp') return t('spot.vsLimp', { limpers: s.limpers!.map(pos).join(', '), count: s.limpers!.length })
-  if (spot.kind === 'vs4bet') {
-    return t('spot.vs4bet', { villain: pos(spot.villain), amount: fmtBb(s.facingBb!), threeBet: fmtBb(s.heroThreeBetBb!) })
-  }
-  return t('spot.vs3bet', { villain: pos(spot.villain), amount: fmtBb(s.facingBb!), open: fmtBb(s.heroOpenBb!) })
+  const table = useTrainer((s) => s.tables[index])
+  const chart = useTrainer((s) => s.chart)
+  const threshold = useTrainer((s) => s.settings.threshold)
+  const next = useTrainer((s) => s.next)
+  const setReviewing = useTrainer((s) => s.setReviewing)
+  if (!table?.answer) return null
+  const { question, answer } = table
+  return (
+    <aside className="review-panel" data-testid="review-panel" aria-label={t('multi.review')}>
+      <div className="review-head">
+        <span className="muted">{t('multi.reviewOf', { n: index + 1 })}</span>
+        <button type="button" className="review-close" onClick={() => setReviewing(null)} aria-label={t('multi.close')}>
+          ✕
+        </button>
+      </div>
+      <Feedback
+        answer={answer}
+        hand={question.hand}
+        freqs={question.freqs}
+        spot={question.scenario.spot}
+        compiled={chart.spots.get(question.spotKey)}
+        threshold={threshold}
+        onNext={() => next(index)}
+      />
+    </aside>
+  )
 }
 
 export function TrainerPage() {
   const { t } = useTranslation()
-  const { ready, question, answer, submit, next, settings, chart } = useTrainer()
-  const pos = usePositionName()
-  const sound = (kind: SoundKind) => {
-    if (settings.sound && settings.soundKinds[kind]) playSound(kind, settings.volume)
-  }
-  const onTick = useCallback(() => {
-    const { sound: on, soundKinds, volume } = useTrainer.getState().settings
-    if (on && soundKinds.tick) playSound('tick', volume)
+  const ready = useTrainer((s) => s.ready)
+  const count = useTrainer((s) => s.tables.length)
+  const wanted = useTrainer((s) => s.settings.tables)
+  const reviewing = useTrainer((s) => s.reviewing)
+  const updateSettings = useTrainer((s) => s.updateSettings)
+  // Subscribing to the tables keeps the active-table highlight current.
+  const active = useTrainer((s) => (s.tables.length > 1 ? s.activeTable() : 0))
+  const wide = useMediaQuery(MULTI_QUERY)
+  const multi = count > 1
+
+  useEffect(() => {
+    useTrainer.getState().setTableCount(wide ? wanted : 1)
+  }, [wide, wanted])
+
+  // A hidden tab pauses every table clock.
+  useEffect(() => {
+    const onVisibility = () => useTrainer.getState().setHidden(document.hidden)
+    onVisibility()
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => document.removeEventListener('visibilitychange', onVisibility)
   }, [])
-  const timer = useDecisionTimer(onTick)
-  const spotText = useSpotText(question.scenario)
-  const raiseOption = question.scenario.actions.find((o) => o.action === 'raise')
-  const raiseNeedsSize = raiseOption !== undefined && needsSize(raiseOption, settings.sizeInput)
-  const [raiseSize, setRaiseSize] = useState(question.scenario.minRaiseBb)
 
-  // Each new hand starts the bet sizer at the minimum raise, like a poker client.
-  useEffect(() => setRaiseSize(question.scenario.minRaiseBb), [question.id, question.scenario.minRaiseBb])
+  // Leaving the trainer closes the review panel so the clocks don't stay paused.
+  useEffect(() => () => useTrainer.getState().setReviewing(null), [])
 
-  const act = useCallback(
-    (action: Action) => submit(action, action === 'raise' && raiseNeedsSize ? raiseSize : undefined),
-    [submit, raiseNeedsSize, raiseSize],
-  )
+  const handlers = useRef(new Map<number, KeyHandler>())
+  const register = useCallback((index: number, handler: KeyHandler | null) => {
+    if (handler) handlers.current.set(index, handler)
+    else handlers.current.delete(index)
+  }, [])
 
-  // Keyboard: F/C/R to answer, Space/Enter/Esc for next.
+  // One keyboard listener: keys go to the review panel when open, else to the active table.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!ready || e.ctrlKey || e.metaKey || e.altKey) return
       if (e.target instanceof HTMLInputElement) return
       const key = e.key.toLowerCase()
-      if (!answer) {
-        const action = (Object.keys(HOTKEYS) as Action[]).find((a) => HOTKEYS[a] === key)
-        if (!action || !question.scenario.actions.some((o) => o.action === action)) return
-        act(action)
-      } else if (key === ' ' || key === 'enter' || key === 'escape') {
+      const s = useTrainer.getState()
+      if (s.reviewing !== null) {
+        if (key === 'escape') s.setReviewing(null)
+        else if (key === ' ' || key === 'enter') s.next(s.reviewing)
+        else return
         e.preventDefault()
-        next()
+        return
       }
+      const target = s.tables.length === 1 ? 0 : s.activeTable()
+      if (target !== null) handlers.current.get(target)?.(key, e)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [ready, answer, question, next, act])
+  }, [ready])
 
-  // Sounds: deal (+ chips when facing a bet) on each new hand, result on answer.
-  useEffect(() => {
-    if (!ready) return
-    sound('deal')
-    if (question.scenario.facingBb) {
-      const id = window.setTimeout(() => sound('chip'), 180)
-      return () => window.clearTimeout(id)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only on a new hand, not on settings change
-  }, [ready, question.id])
-
-  useEffect(() => {
-    if (answer) sound(answer.correct ? 'correct' : 'wrong')
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when an answer arrives
-  }, [answer])
-
-  // Correct answers move on automatically.
-  useEffect(() => {
-    if (!answer?.correct) return
-    const id = window.setTimeout(next, AUTO_NEXT_MS)
-    return () => window.clearTimeout(id)
-  }, [answer, next])
-
-  const feedback = answer && (
-    <Feedback
-      answer={answer}
-      hand={question.hand}
-      freqs={question.freqs}
-      spot={question.scenario.spot}
-      compiled={chart.spots.get(question.spotKey)}
-      threshold={settings.threshold}
-      onNext={next}
-    />
-  )
+  if (!ready) return null
 
   return (
-    <>
-      {ready && (
-        <main className="main">
-          <p className="spot-text" data-testid="spot-text" data-spot={question.spotKey}>
-            <b>{pos(question.scenario.spot.hero)}</b> · {spotText}
-            {question.isReview && <span className="badge-review">{t('table.review')}</span>}
-            {settings.mixedMode === 'rng' && (
-              <span className="badge-roll" data-testid="roll" title={t('table.rollHint')}>
-                🎲 {question.roll}
-              </span>
-            )}
-          </p>
-          <Table scenario={question.scenario} cards={question.cards} questionId={question.id} timer={timer} />
-          {/* Always present when sizes are typed, so the layout doesn't jump; inactive for all-ins. */}
-          {settings.sizeInput && (
-            <BetSizer
-              min={question.scenario.minRaiseBb}
-              max={100}
-              value={raiseNeedsSize ? raiseSize : 100}
-              onChange={setRaiseSize}
-              onSubmit={() => act('raise')}
-              disabled={answer !== null || !raiseNeedsSize}
-              presets={PRESET_MULTIPLIERS.map((m) => ({ label: `x${m}`, value: presetSize(m, question.scenario) }))}
-            />
-          )}
-          <ActionBar
-            spot={question.scenario.spot}
-            options={question.scenario.actions}
-            disabled={answer !== null}
-            chosen={answer?.action ?? undefined}
-            accepted={answer?.accepted}
-            onAction={act}
-            raiseSize={raiseNeedsSize ? raiseSize : undefined}
-          />
-          <div className="trainer-links">
-            <a href="#/draw">✏️ {t('draw.open')}</a>
+    <main className={`main${multi ? ' main-multi' : ''}`}>
+      {wide && (
+        <div className="tables-switch">
+          <span className="muted">{t('multi.tables')}</span>
+          <div className="lang" role="group" aria-label={t('multi.tables')}>
+          {COUNTS.map((n) => (
+            <button key={n} type="button" aria-pressed={wanted === n} onClick={() => updateSettings({ tables: n })}>
+              {n}
+            </button>
+          ))}
           </div>
-          <div className="feedback-slot">{answer?.correct && feedback}</div>
-          {/* A mistake opens in a centred modal: the whole explanation fits, long parts scroll inside. */}
-          {answer && !answer.correct && (
-            <div className="modal-backdrop" data-testid="mistake-modal">
-              <div className="modal" role="dialog" aria-modal="true" aria-label={t('feedback.wrong')}>
-                {feedback}
-              </div>
-            </div>
-          )}
-        </main>
+        </div>
       )}
-    </>
+      <div className={`tables-layout${reviewing !== null ? ' has-review' : ''}`}>
+        <div className={`tables-grid${multi ? ' multi' : ''}`} data-count={count}>
+          {Array.from({ length: count }, (_, i) => (
+            <TablePanel key={i} index={i} multi={multi} active={multi && active === i} register={register} />
+          ))}
+        </div>
+        {multi && reviewing !== null && <ReviewPanel index={reviewing} />}
+      </div>
+    </main>
   )
 }

@@ -17,12 +17,18 @@ describe('settings', () => {
       middleName: 'MP',
       soundKinds: { deal: true, chip: true, correct: true, wrong: true, tick: true },
       timeLimit: 0,
+      tables: 1,
     })
   })
 
   it('keeps valid fields and resets invalid ones', () => {
     expect(sanitizeSettings({ dailyGoal: 50, threshold: 7, sound: 'yes' })).toEqual({ ...DEFAULT_SETTINGS, dailyGoal: 50 })
     expect(sanitizeSettings(null)).toEqual(DEFAULT_SETTINGS)
+  })
+
+  it('plays 1 to 4 tables', () => {
+    expect(sanitizeSettings({ tables: 3 }).tables).toBe(3)
+    expect(sanitizeSettings({ tables: 6 }).tables).toBe(1)
   })
 
   it('time limit is one of off / 5 / 10 / 15 / 30 s', () => {

@@ -19,38 +19,24 @@ export interface TimerView {
 }
 
 /**
- * Drives the decision clock of the current hand: starts it after the deal, pauses it while the tab is hidden,
+ * Drives the decision clock of one table's hand: starts it after the deal (pauses live in the store),
  * calls `timeUp` when the limit runs out and `onTick` once per second in the last 3 s.
  */
-export function useDecisionTimer(onTick: () => void): TimerView | null {
+export function useDecisionTimer(table: number, onTick: () => void): TimerView | null {
   const ready = useTrainer((s) => s.ready)
-  const questionId = useTrainer((s) => s.question.id)
-  const clock = useTrainer((s) => s.clock)
-  const answer = useTrainer((s) => s.answer)
+  const questionId = useTrainer((s) => s.tables[table]?.question.id)
+  const clock = useTrainer((s) => s.tables[table]?.clock ?? null)
+  const answer = useTrainer((s) => s.tables[table]?.answer ?? null)
   const limit = useTrainer((s) => s.settings.timeLimit)
   const now = useTrainer((s) => s.now)
   const [t, setT] = useState(() => now())
   const lastTick = useRef<number | null>(null)
 
   useEffect(() => {
-    if (!ready) return
-    const { startClock, pauseClock } = useTrainer.getState()
-    const id = window.setTimeout(() => {
-      startClock()
-      if (document.hidden) pauseClock()
-    }, DEAL_MS)
+    if (!ready || questionId === undefined) return
+    const id = window.setTimeout(() => useTrainer.getState().startClock(table), DEAL_MS)
     return () => window.clearTimeout(id)
-  }, [ready, questionId])
-
-  useEffect(() => {
-    const onVisibility = () => {
-      const s = useTrainer.getState()
-      if (document.hidden) s.pauseClock()
-      else s.resumeClock()
-    }
-    document.addEventListener('visibilitychange', onVisibility)
-    return () => document.removeEventListener('visibilitychange', onVisibility)
-  }, [])
+  }, [ready, questionId, table])
 
   const running = clock !== null && answer === null
   useEffect(() => {
@@ -66,7 +52,7 @@ export function useDecisionTimer(onTick: () => void): TimerView | null {
   useEffect(() => {
     if (!running || left === null) return
     if (left <= 0) {
-      useTrainer.getState().timeUp()
+      useTrainer.getState().timeUp(table)
       return
     }
     const sec = Math.ceil(left / 1000)
@@ -74,7 +60,7 @@ export function useDecisionTimer(onTick: () => void): TimerView | null {
       lastTick.current = sec
       onTick()
     }
-  }, [running, left, onTick])
+  }, [running, left, onTick, table])
 
   if (!clock) return null
   const shownMs = answer?.answerMs ?? elapsedMs(clock, t)

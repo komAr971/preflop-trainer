@@ -16,9 +16,12 @@ interface Props {
   compiled?: CompiledSpot
   threshold?: number
   onNext: () => void
+  /** Multi-table: short version; the full explanation opens in the side panel via `onWhy`. */
+  compact?: boolean
+  onWhy?: () => void
 }
 
-export function Feedback({ answer, hand, freqs, spot, compiled, threshold = 0.25, onNext }: Props) {
+export function Feedback({ answer, hand, freqs, spot, compiled, threshold = 0.25, onNext, compact, onWhy }: Props) {
   const { t } = useTranslation()
   const name = useActionName()
   const ruleText = useSizeRuleText()
@@ -55,10 +58,15 @@ export function Feedback({ answer, hand, freqs, spot, compiled, threshold = 0.25
           ({ruleText(answer.size.rule)})
         </span>
       )}
-      <button type="button" className="next" onClick={onNext} autoFocus>
+      {compact && onWhy && !answer.correct && answer.action !== null && (
+        <button type="button" className="why-open" onClick={onWhy}>
+          {t('multi.why')}
+        </button>
+      )}
+      <button type="button" className="next" onClick={onNext} autoFocus={!compact}>
         {t('feedback.next')} <kbd>{t('feedback.nextHint')}</kbd>
       </button>
-      {!answer.correct && answer.action !== null && compiled && (
+      {!compact && !answer.correct && answer.action !== null && compiled && (
         <MistakeWhy compiled={compiled} hand={hand} answer={answer} threshold={threshold} />
       )}
     </div>

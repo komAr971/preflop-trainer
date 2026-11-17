@@ -1,4 +1,10 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
+
+/** The table takes the free height: an empty-looking screen (0 px table) must fail. */
+async function expectBigTable(page: Page) {
+  const h = (await page.locator('svg.table').boundingBox())!.height
+  expect(h).toBeGreaterThan(page.viewportSize()!.height * 0.4)
+}
 
 test.describe('phone layout', () => {
   test.skip(({ isMobile }) => !isMobile, 'phone only')
@@ -11,6 +17,7 @@ test.describe('phone layout', () => {
     }
     await expect(page.locator('.bet-sizer')).toBeInViewport({ ratio: 1 })
     expect(await page.evaluate(() => document.documentElement.scrollHeight <= window.innerHeight + 1)).toBe(true)
+    await expectBigTable(page)
     await page.screenshot({ path: 'test-results/phone-train.png' })
   })
 
@@ -47,6 +54,7 @@ test.describe('small phone (375×667)', () => {
     await expect(page.locator('[data-card]')).toHaveCount(2)
     await expect(page.locator('.action').last()).toBeInViewport({ ratio: 1 })
     expect(await page.evaluate(() => document.documentElement.scrollHeight <= window.innerHeight + 1)).toBe(true)
+    await expectBigTable(page)
     await page.screenshot({ path: 'test-results/phone-small.png' })
   })
 

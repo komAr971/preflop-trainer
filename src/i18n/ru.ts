@@ -224,6 +224,13 @@ export const ru = {
     or: ' или ',
     chart: 'Чарт спота, рука {{hand}} обведена',
   },
+  multi: {
+    tables: 'Столы:',
+    why: 'Почему?',
+    review: 'Разбор ошибки',
+    reviewOf: 'Разбор: стол {{n}}',
+    close: 'Закрыть разбор',
+  },
   feedback: {
     roll: 'выпало {{roll}}:',
     correct: 'Верно',

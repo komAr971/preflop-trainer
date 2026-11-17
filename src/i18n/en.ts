@@ -226,6 +226,13 @@ export const en: Messages = {
     or: ' or ',
     chart: 'Spot chart, {{hand}} is outlined',
   },
+  multi: {
+    tables: 'Tables:',
+    why: 'Why?',
+    review: 'Mistake review',
+    reviewOf: 'Review: table {{n}}',
+    close: 'Close the review',
+  },
   feedback: {
     roll: 'rolled {{roll}}:',
     correct: 'Correct',

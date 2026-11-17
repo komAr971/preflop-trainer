@@ -1,3 +1,5 @@
+import { createThrottle } from './throttle'
+
 /** Synthesized UI sounds (Web Audio): no files, works offline. Kept soft: no high pitches, smooth envelopes. */
 export type SoundKind = 'deal' | 'chip' | 'correct' | 'wrong' | 'tick'
 
@@ -100,8 +102,11 @@ export function renderSound(ac: BaseAudioContext, destination: AudioNode, kind: 
   }
 }
 
+/** Several tables can fire the same sound together: play it once. */
+const allow = createThrottle(100)
+
 export function playSound(kind: SoundKind, volume: number): void {
-  if (volume <= 0) return
+  if (volume <= 0 || !allow(kind, performance.now())) return
   const ac = audio()
   if (!ac) return
   renderSound(ac, ac.destination, kind, volume, ac.currentTime + 0.01)

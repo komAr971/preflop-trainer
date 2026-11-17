@@ -27,7 +27,7 @@ describe('App', () => {
   it('marks a correct answer and counts it', async () => {
     const user = userEvent.setup()
     render(<App />)
-    const { question } = useTrainer.getState()
+    const { question } = useTrainer.getState().tables[0]
     const right = correctActions(question.freqs)[0]
     await user.click(screen.getByRole('button', { name: actionLabel[right] }))
     expect(screen.getByRole('status')).toHaveTextContent('Верно')
@@ -37,7 +37,7 @@ describe('App', () => {
   it('marks a wrong answer and waits for Next', async () => {
     const user = userEvent.setup()
     render(<App />)
-    const { question } = useTrainer.getState()
+    const { question } = useTrainer.getState().tables[0]
     const accepted = correctActions(question.freqs)
     const wrong = question.scenario.actions.find((o) => !accepted.includes(o.action))!.action
     await user.click(screen.getByRole('button', { name: actionLabel[wrong] }))
@@ -45,14 +45,14 @@ describe('App', () => {
     expect(screen.getByTestId('score')).toHaveTextContent('0/1')
     await user.keyboard(' ')
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
-    expect(useTrainer.getState().question.id).toBe(1)
+    expect(useTrainer.getState().tables[0].question.id).toBe(1)
   })
 
   it('answers with keyboard hotkeys', async () => {
     const user = userEvent.setup()
     render(<App />)
     await user.keyboard('f')
-    expect(useTrainer.getState().answer?.action).toBe('fold')
+    expect(useTrainer.getState().tables[0].answer?.action).toBe('fold')
   })
 
   it('switches language in settings', async () => {
@@ -81,13 +81,13 @@ describe('App', () => {
     const user = userEvent.setup()
     act(() => {
       for (let i = 0; i < 300; i++) {
-        const q = useTrainer.getState().question
+        const q = useTrainer.getState().tables[0].question
         const rule = q.scenario.actions.find((o) => o.action === 'raise')?.rule
         if (correctActions(q.freqs).includes('raise') && rule && rule.kind !== 'allIn') break
         useTrainer.getState().next()
       }
     })
-    const q = useTrainer.getState().question
+    const q = useTrainer.getState().tables[0].question
     const rule = q.scenario.actions.find((o) => o.action === 'raise')!.rule!
     const { container } = render(<App />)
     expect(screen.getByRole('slider')).toHaveValue(String(q.scenario.minRaiseBb))
@@ -104,7 +104,7 @@ describe('App', () => {
   it('explains a wrong action and shows the spot chart with the hand outlined', async () => {
     const user = userEvent.setup()
     const { container } = render(<App />)
-    const q = useTrainer.getState().question
+    const q = useTrainer.getState().tables[0].question
     const accepted = correctActions(q.freqs)
     const wrong = q.scenario.actions.find((o) => !accepted.includes(o.action) && o.action !== 'raise')
     if (!wrong) return

@@ -32,6 +32,8 @@ export const settingsSchema = z.object({
     .default({ deal: true, chip: true, correct: true, wrong: true, tick: true }),
   /** Seconds per decision; 0 = no limit. Time is measured either way. */
   timeLimit: z.union([z.literal(0), z.literal(5), z.literal(10), z.literal(15), z.literal(30)]).default(0),
+  /** Tables at once on wide screens (phones always play one). Device-only: not synced. */
+  tables: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]).default(1),
 })
 
 export const TIME_LIMITS = [0, 5, 10, 15, 30] as const
