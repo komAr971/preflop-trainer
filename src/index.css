@@ -1179,13 +1179,14 @@ kbd {
     width: 36px;
     height: 36px;
   }
-  /* Phones: quick sizes take their own thin row above the slider. */
+  /* Phones: quick sizes take their own thin row below the slider. */
   .bet-sizer {
     flex-wrap: wrap;
     row-gap: 4px;
   }
   .bet-presets {
     flex-basis: 100%;
+    order: 1;
   }
   .bet-presets button {
     flex: 1;

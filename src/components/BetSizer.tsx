@@ -28,22 +28,6 @@ export function BetSizer({ min, max, value, onChange, onSubmit, disabled, preset
 
   return (
     <div className="bet-sizer" aria-label={t('size.prompt')}>
-      {presets.length > 0 && (
-        <div className="bet-presets" role="group" aria-label={t('size.presets')}>
-          {presets.map((p) => (
-            <button
-              key={p.label}
-              type="button"
-              disabled={disabled}
-              aria-pressed={!disabled && value === p.value}
-              title={`${fmtBb(p.value)}bb`}
-              onClick={() => onChange(p.value)}
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
-      )}
       <button type="button" aria-label="−" disabled={disabled || value <= min} onClick={() => set(value - STEP)}>
         −
       </button>
@@ -60,6 +44,22 @@ export function BetSizer({ min, max, value, onChange, onSubmit, disabled, preset
       <button type="button" aria-label="+" disabled={disabled || value >= max} onClick={() => set(value + STEP)}>
         +
       </button>
+      {presets.length > 0 && (
+        <div className="bet-presets" role="group" aria-label={t('size.presets')}>
+          {presets.map((p) => (
+            <button
+              key={p.label}
+              type="button"
+              disabled={disabled}
+              aria-pressed={!disabled && value === p.value}
+              title={`${fmtBb(p.value)}bb`}
+              onClick={() => onChange(p.value)}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+      )}
       <label className="bet-input">
         <input
           type="text"
