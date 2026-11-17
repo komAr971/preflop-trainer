@@ -3,6 +3,7 @@ import { LANGUAGES, setLanguage } from '../i18n'
 import { TIME_LIMITS } from '../core/settings'
 import { useTrainer } from '../store/trainerStore'
 import { SOUND_KINDS, playSound } from '../ui/sound'
+import { AccountSection } from './AccountSection'
 import { NumberField } from './NumberField'
 
 function Percent({
@@ -52,6 +53,7 @@ export function SettingsPage() {
 
   return (
     <main className="settings">
+      <AccountSection />
       <section>
         <h2>{t('settings.general')}</h2>
         <div className="setting">

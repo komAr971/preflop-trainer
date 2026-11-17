@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_SETTINGS, sanitizeSettings } from './settings'
+import { DEFAULT_SETTINGS, sanitizeSettings, syncedPart, syncedSettingsEqual, withDeviceFields } from './settings'
 
 describe('settings', () => {
   it('has the agreed defaults', () => {
@@ -39,5 +39,20 @@ describe('settings', () => {
   it('keeps sound choices saved before the tick sound existed', () => {
     const old = { soundKinds: { deal: false, chip: true, correct: false, wrong: true } }
     expect(sanitizeSettings(old).soundKinds).toEqual({ deal: false, chip: true, correct: false, wrong: true, tick: true })
+  })
+})
+
+describe('synced settings', () => {
+  it('keeps volume and tables on the device', () => {
+    const local = { ...DEFAULT_SETTINGS, volume: 0.2, tables: 3 as const }
+    expect(syncedPart(local)).not.toHaveProperty('volume')
+    expect(syncedPart(local)).not.toHaveProperty('tables')
+    const merged = withDeviceFields({ ...DEFAULT_SETTINGS, dailyGoal: 50, volume: 1, tables: 1 }, local)
+    expect(merged).toMatchObject({ dailyGoal: 50, volume: 0.2, tables: 3 })
+  })
+
+  it('compares only the synced part', () => {
+    expect(syncedSettingsEqual(DEFAULT_SETTINGS, { ...DEFAULT_SETTINGS, volume: 0.1, tables: 2 })).toBe(true)
+    expect(syncedSettingsEqual(DEFAULT_SETTINGS, { ...DEFAULT_SETTINGS, soundKinds: { ...DEFAULT_SETTINGS.soundKinds, tick: false } })).toBe(false)
   })
 })

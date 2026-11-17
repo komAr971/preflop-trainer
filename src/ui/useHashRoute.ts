@@ -1,17 +1,19 @@
 import { useEffect, useState } from 'react'
+import type { ChartId } from '../db/repo'
 
 export type Route =
   | { page: 'train' }
   | { page: 'charts' }
-  | { page: 'edit'; chartId: number }
+  | { page: 'edit'; chartId: ChartId }
   | { page: 'stats' }
   | { page: 'settings' }
   | { page: 'draw' }
 
 export function parseHash(hash: string): Route {
   const parts = hash.replace(/^#\/?/, '').split('/')
-  if (parts[0] === 'charts' && parts[1] !== undefined && /^\d+$/.test(parts[1])) {
-    return { page: 'edit', chartId: Number(parts[1]) }
+  if (parts[0] === 'charts' && parts[1]) {
+    // Built-in charts have numeric ids, own charts UUIDs.
+    return { page: 'edit', chartId: /^-?\d+$/.test(parts[1]) ? Number(parts[1]) : decodeURIComponent(parts[1]) }
   }
   if (parts[0] === 'charts') return { page: 'charts' }
   if (parts[0] === 'stats') return { page: 'stats' }
@@ -22,7 +24,7 @@ export function parseHash(hash: string): Route {
 
 export function hrefFor(route: Route): string {
   if (route.page === 'charts') return '#/charts'
-  if (route.page === 'edit') return `#/charts/${route.chartId}`
+  if (route.page === 'edit') return `#/charts/${encodeURIComponent(route.chartId)}`
   if (route.page === 'stats') return '#/stats'
   if (route.page === 'settings') return '#/settings'
   if (route.page === 'draw') return '#/draw'

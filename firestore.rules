@@ -1,0 +1,18 @@
+rules_version = '2';
+
+// Each user reads and writes only their own tree: users/{uid}/{charts|progress|meta|log}/{doc}.
+// Docs are { data: JSON string, syncedAt: server time } — see src/sync/firebaseCloud.ts.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid}/{collection}/{docId} {
+      allow read, delete: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null
+        && request.auth.uid == uid
+        && collection in ['charts', 'progress', 'meta', 'log']
+        && request.resource.data.keys().hasOnly(['data', 'syncedAt'])
+        && request.resource.data.data is string
+        && request.resource.data.data.size() < 900000
+        && request.resource.data.syncedAt == request.time;
+    }
+  }
+}

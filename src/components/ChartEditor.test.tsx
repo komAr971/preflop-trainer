@@ -11,7 +11,7 @@ import { useTrainer } from '../store/trainerStore'
 import { ChartEditor } from './ChartEditor'
 
 let repo: Repo
-let id: number
+let id: string
 let n = 0
 
 beforeEach(async () => {

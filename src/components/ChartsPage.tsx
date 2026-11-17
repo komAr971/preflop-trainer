@@ -16,6 +16,7 @@ export function ChartsPage() {
   const repo = useTrainer((s) => s.repo)
   const activeId = useTrainer((s) => s.chartId)
   const selectChart = useTrainer((s) => s.selectChart)
+  const dataVersion = useTrainer((s) => s.dataVersion)
   const [charts, setCharts] = useState<ChartSummary[] | null>(null)
   const [notice, setNotice] = useState<Notice | null>(null)
   const fileInput = useRef<HTMLInputElement>(null)
@@ -26,7 +27,7 @@ export function ChartsPage() {
 
   useEffect(() => {
     void refresh()
-  }, [refresh])
+  }, [refresh, dataVersion])
 
   if (!repo) return <p className="notice error">{t('charts.noStorage')}</p>
 

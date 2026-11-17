@@ -70,6 +70,36 @@ describe('trainer store', () => {
     expect(store().chart.spots.size).toBe(62)
   })
 
+  it('picks up synced changes without redealing the hand in play', async () => {
+    const repo = createDexieRepo(new TrainerDb(`store-${n++}`))
+    await store().init(repo)
+    const question = store().tables[0].question
+    const before = store().dataVersion
+    // Another device answered 5 more hands and changed the daily goal.
+    await repo.recordAttempt(
+      { chartId: STARTER_ID, spotKey: 'rfi:CO', hand: 'K9o', action: 'fold', correct: false, ts: 1 },
+      [{ spotKey: 'rfi:CO', hand: 'K9o', box: 0, due: 8 }],
+      5,
+    )
+    await repo.saveSettings({ ...store().settings, dailyGoal: 33 })
+    await store().refreshFromStorage({ settings: true, charts: [], progress: [STARTER_ID] })
+    expect(store().counter).toBe(5)
+    expect(store().reviews).toHaveLength(1)
+    expect(store().settings.dailyGoal).toBe(33)
+    expect(store().tables[0].question).toBe(question)
+    expect(store().dataVersion).toBe(before + 1)
+  })
+
+  it('falls back to the starter when the active chart was deleted on another device', async () => {
+    const repo = createDexieRepo(new TrainerDb(`store-${n++}`))
+    const id = await repo.saveChart({ ...starterChart, name: 'Удалят' })
+    await store().init(repo)
+    await store().selectChart(id)
+    await repo.deleteChart(id)
+    await store().refreshFromStorage({ settings: false, charts: [id], progress: [] })
+    expect(store().chartId).toBe(STARTER_ID)
+  })
+
   it('randomizer mode accepts only the action of the rolled interval', () => {
     store().updateSettings({ mixedMode: 'rng' })
     for (let i = 0; i < 30; i++) {

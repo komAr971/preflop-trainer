@@ -11,7 +11,7 @@ const raised = (page: Page, hand: string) =>
 test('paint by dragging, save, reload', async ({ page }, info) => {
   await page.goto('/#/charts')
   await page.getByRole('button', { name: /^(Новый чарт|New chart)$/ }).click()
-  await expect(page).toHaveURL(/#\/charts\/\d+$/)
+  await expect(page).toHaveURL(/#\/charts\/[0-9a-f-]{36}$/)
   await expect(page.getByRole('grid')).toBeVisible()
 
   // Drag across 72o → 62o → 52o (bottom row) with the Raise brush.

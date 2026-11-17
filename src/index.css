@@ -586,6 +586,65 @@ kbd {
   margin: 4px 0 8px;
 }
 
+/* ── account ── */
+.settings input[type='email'],
+.settings input[type='password'] {
+  font: inherit;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  max-width: 320px;
+  width: 100%;
+}
+
+.account-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.account-actions button {
+  font: inherit;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.account-actions button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.account-actions button.danger {
+  color: var(--bad);
+}
+
+.account-actions button.link {
+  border-color: transparent;
+  background: none;
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.account-actions button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.account-delete {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--bad);
+  border-radius: 10px;
+}
+
 .sound-kinds {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));

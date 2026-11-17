@@ -18,6 +18,7 @@ export function StatsPage() {
   const chartId = useTrainer((s) => s.chartId)
   const settings = useTrainer((s) => s.settings)
   const sessionTotal = useTrainer((s) => s.session.total)
+  const dataVersion = useTrainer((s) => s.dataVersion)
   const [attempts, setAttempts] = useState<AttemptLike[] | null>(null)
   const [timestamps, setTimestamps] = useState<number[]>([])
   const [heatSpot, setHeatSpot] = useState<SpotKey | ''>('')
@@ -32,7 +33,7 @@ export function StatsPage() {
         setDrawings(d)
       },
     )
-  }, [repo, chartId, sessionTotal])
+  }, [repo, chartId, sessionTotal, dataVersion])
 
   const rule = { window: settings.learnedWindow, threshold: settings.learnedThreshold }
   const stats = useMemo(

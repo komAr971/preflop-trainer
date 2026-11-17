@@ -14,7 +14,7 @@ import {
   type Brush,
 } from '../core/chartEdit'
 import { formatRange, type Range } from '../core/range'
-import { isBuiltin } from '../db/repo'
+import { isBuiltin, type ChartId } from '../db/repo'
 import { useTrainer } from '../store/trainerStore'
 import { navigate } from '../ui/useHashRoute'
 import { NumberField } from './NumberField'
@@ -38,7 +38,7 @@ function actionRangeText(chart: Chart, key: SpotKey, action: 'call' | 'raise'): 
   return formatRange(range)
 }
 
-export function ChartEditor({ chartId }: { chartId: number }) {
+export function ChartEditor({ chartId }: { chartId: ChartId }) {
   const { t } = useTranslation()
   const spotLabel = useSpotLabel()
   const name = useActionName()

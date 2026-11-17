@@ -52,3 +52,26 @@ export function sanitizeSettings(raw: unknown): Settings {
   }
   return out as Settings
 }
+
+/** Settings that stay on this device and never reach the cloud. */
+export const DEVICE_ONLY = ['volume', 'tables'] as const satisfies readonly (keyof Settings)[]
+type DeviceOnly = (typeof DEVICE_ONLY)[number]
+export type SyncedSettings = Omit<Settings, DeviceOnly>
+
+export function syncedPart(s: Settings): SyncedSettings {
+  const out: Record<string, unknown> = { ...s }
+  for (const key of DEVICE_ONLY) delete out[key]
+  return out as SyncedSettings
+}
+
+/** Settings from the cloud, keeping this device's own fields. */
+export function withDeviceFields(remote: unknown, local: Settings): Settings {
+  const merged = sanitizeSettings(remote)
+  for (const key of DEVICE_ONLY) (merged as Record<string, unknown>)[key] = local[key]
+  return merged
+}
+
+export function syncedSettingsEqual(a: Settings, b: Settings): boolean {
+  const keys = Object.keys(syncedPart(DEFAULT_SETTINGS)) as (keyof SyncedSettings)[]
+  return keys.every((k) => JSON.stringify(a[k]) === JSON.stringify(b[k]))
+}

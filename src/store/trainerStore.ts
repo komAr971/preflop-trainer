@@ -7,7 +7,7 @@ import { actionForRoll, correctActions, dealCards, pickHand, rollD100, sizeMatch
 import { elapsedMs, pauseClock, resumeClock, startClock, type Clock } from '../core/timer'
 import { DEFAULT_SETTINGS, type Settings } from '../core/settings'
 import { starterChart } from '../data/starterChart'
-import { STARTER_ID, type Repo } from '../db/repo'
+import { STARTER_ID, type ChartId, type Repo } from '../db/repo'
 
 export interface Question {
   id: number
@@ -50,7 +50,7 @@ interface TrainerState {
   /** False until stored progress is loaded; UI waits for it so answers are never lost. */
   ready: boolean
   repo: Repo | null
-  chartId: number
+  chartId: ChartId
   chart: Chart
   rng: Rng
   now: () => number
@@ -81,8 +81,12 @@ interface TrainerState {
   /** Connects storage and loads the active chart with its progress. */
   init: (repo: Repo) => Promise<void>
   /** Switches training to another saved chart. */
-  selectChart: (chartId: number) => Promise<void>
+  selectChart: (chartId: ChartId) => Promise<void>
   updateSettings: (patch: Partial<Settings>) => void
+  /** Bumped when another device's changes arrived: lists and stats reload. */
+  dataVersion: number
+  /** Picks up what a sync pulled: settings, the active chart and its review queue. Hands in play stay. */
+  refreshFromStorage: (changed: { settings: boolean; charts: ChartId[]; progress: ChartId[] }) => Promise<void>
   /** In-memory reset (tests). */
   reset: (chart: Chart, rng?: Rng, now?: () => number) => void
 }
@@ -166,6 +170,7 @@ export const useTrainer = create<TrainerState>()((set, get) => {
   hidden: false,
   reviewing: null,
   session: { total: 0, correct: 0 },
+  dataVersion: 0,
 
   submit: (action, sizeBb, t = 0) => {
     const { tables, settings, session, counter, reviews, repo, chartId, now } = get()
@@ -302,7 +307,7 @@ export const useTrainer = create<TrainerState>()((set, get) => {
     const { repo } = get()
     if (!repo) return
     let chart = starter
-    let id = STARTER_ID
+    let id: ChartId = STARTER_ID
     try {
       const file = await repo.getChart(chartId)
       if (file) {
@@ -325,6 +330,20 @@ export const useTrainer = create<TrainerState>()((set, get) => {
     get()
       .repo?.saveSettings(settings)
       .catch((e) => console.error('Failed to save settings', e))
+  },
+
+  refreshFromStorage: async (changed) => {
+    const { repo } = get()
+    if (!repo) return
+    if (changed.settings) set({ settings: await repo.getSettings() })
+    const active = get().chartId
+    if (changed.charts.includes(active)) {
+      // Edited or deleted elsewhere: recompile (falls back to the starter when gone).
+      await get().selectChart(await repo.getActiveChartId())
+    } else if (changed.progress.includes(active)) {
+      set(await repo.loadProgress(active))
+    }
+    set({ dataVersion: get().dataVersion + 1 })
   },
 
   reset: (chart, rng = Math.random, now = Date.now) => {
