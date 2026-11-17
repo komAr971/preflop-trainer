@@ -198,6 +198,7 @@ export const en: Messages = {
     best: 'best',
   },
   size: {
+    presets: 'Quick raise size',
     prompt: 'Raise size',
     slider: 'Raise size slider',
     cancel: 'Cancel',

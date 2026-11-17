@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'motion/react'
 import { useTranslation } from 'react-i18next'
+import { chipStack } from '../core/chips'
 import { fmtBb } from '../core/format'
 import type { Scenario, SeatState } from '../core/scenario'
 import type { Card } from '../core/trainer'
@@ -37,7 +38,10 @@ function Seat({ seat, slot, layout }: { seat: SeatState; slot: number; layout: L
   )
 }
 
+const CHIPS_PER_STACK = 5
+
 function Bet({ amount, slot, layout }: { amount: number; slot: number; layout: Layout }) {
+  const chips = chipStack(amount)
   const [x, y] = layout.slots[slot].bet
   const [sx, sy] = layout.slots[slot].seat
   return (
@@ -47,9 +51,18 @@ function Bet({ amount, slot, layout }: { amount: number; slot: number; layout: L
       animate={{ opacity: 1, x: 0, y: 0 }}
       transition={{ duration: 0.25 }}
     >
-      <g transform={`translate(${x} ${y})`}>
-        <circle r={11} className="chip" />
-        <circle r={6} className="chip-inner" />
+      <g transform={`translate(${x} ${y})`} data-chips={chips.join(',')}>
+        {chips.map((d, i) => {
+          // Stacks of up to 5 chips; extra stacks grow to the left, away from the amount label.
+          const col = Math.floor(i / CHIPS_PER_STACK)
+          const row = i % CHIPS_PER_STACK
+          return (
+            <g key={i} transform={`translate(${-col * 24} ${-row * 4})`} className={`chip chip-${String(d).replace('.', '_')}`}>
+              <circle r={11} className="chip-body" />
+              <circle r={6} className="chip-inner" />
+            </g>
+          )
+        })}
         <text x={18} y={5} className="bet-amount">
           {fmtBb(amount)}
         </text>

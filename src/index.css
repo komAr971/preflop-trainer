@@ -738,6 +738,35 @@ kbd {
   background: var(--surface);
 }
 
+.bet-presets {
+  display: flex;
+  gap: 4px;
+}
+
+.bet-presets button {
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  min-width: 40px;
+  height: 40px;
+  padding: 0 6px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.bet-presets button[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--ok-bg);
+}
+
+.bet-presets button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
 .bet-sizer input[type='range'] {
   flex: 1;
   accent-color: var(--accent);
@@ -871,15 +900,38 @@ kbd {
   stroke: var(--accent);
 }
 
-.chip {
-  fill: var(--chip);
-  stroke: #8a6a14;
+/* Chip colours by denomination (bb): 0.5 white, 1 blue, 5 red, 25 green, 100 black. */
+.chip-body {
+  fill: var(--chip-fill, var(--chip));
+  stroke: var(--chip-edge, #8a6a14);
   stroke-width: 2;
+}
+.chip-0_5 {
+  --chip-fill: #ececec;
+  --chip-edge: #8d8d8d;
+  --chip-ring: #6a6a6a;
+}
+.chip-1 {
+  --chip-fill: #2f6fd1;
+  --chip-edge: #1b4590;
+}
+.chip-5 {
+  --chip-fill: #d23a32;
+  --chip-edge: #8c1d18;
+}
+.chip-25 {
+  --chip-fill: #2e9a4f;
+  --chip-edge: #1a5e30;
+}
+.chip-100 {
+  --chip-fill: #26282a;
+  --chip-edge: #d9b44a;
+  --chip-ring: #d9b44a;
 }
 
 .chip-inner {
   fill: none;
-  stroke: #fff;
+  stroke: var(--chip-ring, #fff);
   stroke-width: 1.5;
   stroke-dasharray: 3 2;
 }
@@ -1127,6 +1179,18 @@ kbd {
     width: 36px;
     height: 36px;
   }
+  /* Phones: quick sizes take their own thin row above the slider. */
+  .bet-sizer {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+  .bet-presets {
+    flex-basis: 100%;
+  }
+  .bet-presets button {
+    flex: 1;
+    height: 30px;
+  }
   .action-bar {
     grid-auto-flow: column;
     margin-top: 6px;
@@ -1190,4 +1254,43 @@ kbd {
   font-weight: 400;
   opacity: 0.8;
   font-variant-numeric: tabular-nums;
+}
+
+/* Mistake modal: centred over the table on every screen size. */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgb(0 0 0 / 0.45);
+}
+.modal {
+  width: min(600px, 100%);
+  max-height: calc(100dvh - 32px);
+  display: flex;
+}
+/* Overrides the phone bottom-sheet rules for .feedback. */
+.modal-backdrop .feedback {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  max-height: none;
+  overflow-y: auto;
+  border-radius: 14px;
+  box-shadow: 0 12px 40px rgb(0 0 0 / 0.35);
+}
+.modal-backdrop .feedback .next {
+  position: sticky;
+  top: 0;
+  margin-left: auto;
+}
+.modal-backdrop .why-chart {
+  /* The chart is square: cap its width by the screen height so the whole explanation fits. */
+  width: min(100%, calc(100dvh - 250px));
+  min-width: 240px;
+  max-width: 100%;
+  margin-inline: auto;
 }

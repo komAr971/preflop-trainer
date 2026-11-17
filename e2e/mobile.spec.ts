@@ -49,4 +49,16 @@ test.describe('small phone (375×667)', () => {
     expect(await page.evaluate(() => document.documentElement.scrollHeight <= window.innerHeight + 1)).toBe(true)
     await page.screenshot({ path: 'test-results/phone-small.png' })
   })
+
+  test('the mistake modal fits without scrolling', async ({ page }) => {
+    await page.goto('/')
+    for (let i = 0; i < 30 && (await page.getByTestId('why').count()) === 0; i++) {
+      await page.keyboard.press('Space')
+      await page.locator('.action-bar .action').first().click()
+    }
+    const modal = page.getByRole('dialog')
+    await expect(modal).toBeInViewport({ ratio: 1 })
+    expect(await modal.locator('.feedback').evaluate((el) => el.scrollHeight - el.clientHeight)).toBeLessThanOrEqual(1)
+    await page.screenshot({ path: 'test-results/phone-small-mistake.png' })
+  })
 })

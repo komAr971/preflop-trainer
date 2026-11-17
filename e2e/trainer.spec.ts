@@ -44,3 +44,22 @@ test('raise with the bet sizer; a mistake shows why and the chart', async ({ pag
   await expect(page.locator('.why .is-highlight')).toHaveCount(1)
   await page.screenshot({ path: `test-results/why-${info.project.name}.png`, fullPage: true })
 })
+
+test('a mistake opens a centred modal that fits the screen; Esc goes on', async ({ page }) => {
+  await page.goto('/')
+  for (let i = 0; i < 30 && (await page.getByTestId('why').count()) === 0; i++) {
+    await page.keyboard.press('Space')
+    await page.locator('.action-bar .action').first().click()
+  }
+  const modal = page.getByRole('dialog')
+  await expect(modal).toBeVisible()
+  const box = (await modal.boundingBox())!
+  const view = page.viewportSize()!
+  expect(box.y).toBeGreaterThanOrEqual(0)
+  expect(box.y + box.height).toBeLessThanOrEqual(view.height)
+  // Everything is visible without scrolling inside the modal.
+  const scroll = await modal.locator('.feedback').evaluate((el) => el.scrollHeight - el.clientHeight)
+  expect(scroll).toBeLessThanOrEqual(1)
+  await page.keyboard.press('Escape')
+  await expect(modal).toBeHidden()
+})

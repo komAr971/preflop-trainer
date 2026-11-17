@@ -196,6 +196,7 @@ export const ru = {
     best: 'лучший',
   },
   size: {
+    presets: 'Быстрый размер рейза',
     prompt: 'Размер рейза',
     slider: 'Ползунок размера рейза',
     cancel: 'Отмена',

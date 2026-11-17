@@ -10,6 +10,8 @@ interface Props {
   /** Enter in the input confirms the raise. */
   onSubmit: () => void
   disabled?: boolean
+  /** Quick sizes, e.g. ×2…×5 of the bet in front. */
+  presets?: { label: string; value: number }[]
 }
 
 const STEP = 0.5
@@ -17,7 +19,7 @@ const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(mi
 const snap = (v: number) => Math.round(v / STEP) * STEP
 
 /** Poker-client style bet sizer: −, slider, +, and a bb input. */
-export function BetSizer({ min, max, value, onChange, onSubmit, disabled }: Props) {
+export function BetSizer({ min, max, value, onChange, onSubmit, disabled, presets = [] }: Props) {
   const { t } = useTranslation()
   const [text, setText] = useState(fmtBb(value))
   useEffect(() => setText(fmtBb(value)), [value])
@@ -26,6 +28,22 @@ export function BetSizer({ min, max, value, onChange, onSubmit, disabled }: Prop
 
   return (
     <div className="bet-sizer" aria-label={t('size.prompt')}>
+      {presets.length > 0 && (
+        <div className="bet-presets" role="group" aria-label={t('size.presets')}>
+          {presets.map((p) => (
+            <button
+              key={p.label}
+              type="button"
+              disabled={disabled}
+              aria-pressed={!disabled && value === p.value}
+              title={`${fmtBb(p.value)}bb`}
+              onClick={() => onChange(p.value)}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+      )}
       <button type="button" aria-label="−" disabled={disabled || value <= min} onClick={() => set(value - STEP)}>
         −
       </button>

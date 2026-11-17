@@ -7,6 +7,7 @@ import { BetSizer } from './BetSizer'
 import { Feedback } from './Feedback'
 import { Table } from './Table'
 import type { Action } from '../core/chart'
+import { PRESET_MULTIPLIERS, presetSize } from '../core/betPresets'
 import { fmtBb } from '../core/format'
 import type { Scenario } from '../core/scenario'
 import { useTrainer } from '../store/trainerStore'
@@ -53,7 +54,7 @@ export function TrainerPage() {
     [submit, raiseNeedsSize, raiseSize],
   )
 
-  // Keyboard: F/C/R to answer, Space/Enter for next.
+  // Keyboard: F/C/R to answer, Space/Enter/Esc for next.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!ready || e.ctrlKey || e.metaKey || e.altKey) return
@@ -63,7 +64,7 @@ export function TrainerPage() {
         const action = (Object.keys(HOTKEYS) as Action[]).find((a) => HOTKEYS[a] === key)
         if (!action || !question.scenario.actions.some((o) => o.action === action)) return
         act(action)
-      } else if (key === ' ' || key === 'enter') {
+      } else if (key === ' ' || key === 'enter' || key === 'escape') {
         e.preventDefault()
         next()
       }
@@ -95,6 +96,18 @@ export function TrainerPage() {
     return () => window.clearTimeout(id)
   }, [answer, next])
 
+  const feedback = answer && (
+    <Feedback
+      answer={answer}
+      hand={question.hand}
+      freqs={question.freqs}
+      spot={question.scenario.spot}
+      compiled={chart.spots.get(question.spotKey)}
+      threshold={settings.threshold}
+      onNext={next}
+    />
+  )
+
   return (
     <>
       {ready && (
@@ -118,6 +131,7 @@ export function TrainerPage() {
               onChange={setRaiseSize}
               onSubmit={() => act('raise')}
               disabled={answer !== null || !raiseNeedsSize}
+              presets={PRESET_MULTIPLIERS.map((m) => ({ label: `x${m}`, value: presetSize(m, question.scenario) }))}
             />
           )}
           <ActionBar
@@ -132,13 +146,15 @@ export function TrainerPage() {
           <div className="trainer-links">
             <a href="#/draw">✏️ {t('draw.open')}</a>
           </div>
-          <div className="feedback-slot">
-            {answer && <Feedback answer={answer} hand={question.hand} freqs={question.freqs} spot={question.scenario.spot}
-                compiled={chart.spots.get(question.spotKey)}
-                threshold={settings.threshold}
-                onNext={next}
-              />}
-          </div>
+          <div className="feedback-slot">{answer?.correct && feedback}</div>
+          {/* A mistake opens in a centred modal: the whole explanation fits, long parts scroll inside. */}
+          {answer && !answer.correct && (
+            <div className="modal-backdrop" data-testid="mistake-modal">
+              <div className="modal" role="dialog" aria-modal="true" aria-label={t('feedback.wrong')}>
+                {feedback}
+              </div>
+            </div>
+          )}
         </main>
       )}
     </>
