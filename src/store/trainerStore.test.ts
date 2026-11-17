@@ -8,6 +8,7 @@ import { STARTER_ID, TrainerDb, createDexieRepo } from '../db/repo'
 import { useTrainer } from './trainerStore'
 
 let n = 0
+let clockNow = 0
 const store = () => useTrainer.getState()
 
 function answerWrong() {
@@ -23,7 +24,8 @@ function answerRight() {
 beforeEach(() => {
   const res = parseChart(starterChart)
   if (!res.ok) throw new Error()
-  store().reset(res.chart, mulberry32(7))
+  clockNow = 0
+  store().reset(res.chart, mulberry32(7), () => clockNow)
 })
 
 describe('trainer store', () => {
@@ -93,5 +95,43 @@ describe('trainer store', () => {
     const q2 = store().question
     store().submit('raise', q2.scenario.actions.find((o) => o.action === 'raise')!.rule!.to)
     expect(store().answer).toMatchObject({ correct: true, size: { ok: true } })
+  })
+
+  it('measures the decision time from the moment the cards are dealt, without hidden-tab time', async () => {
+    const repo = createDexieRepo(new TrainerDb(`store-${n++}`))
+    await store().init(repo)
+    clockNow = 1000
+    store().startClock()
+    clockNow = 3000
+    store().pauseClock()
+    clockNow = 60_000
+    store().resumeClock()
+    clockNow = 61_500
+    answerRight()
+    expect(store().answer?.answerMs).toBe(3500)
+    await new Promise((r) => setTimeout(r, 50))
+    expect((await repo.listAttempts(STARTER_ID))[0]).toMatchObject({ answerMs: 3500, correct: true })
+  })
+
+  it('time up is a mistake with the right answer shown and the hand queued for review', async () => {
+    const repo = createDexieRepo(new TrainerDb(`store-${n++}`))
+    await store().init(repo)
+    store().updateSettings({ timeLimit: 5 })
+    store().startClock()
+    const q = store().question
+    store().timeUp()
+    expect(store().answer).toMatchObject({ action: null, correct: false, timedOut: true, accepted: correctActions(q.freqs) })
+    expect(store().reviews).toMatchObject([{ spotKey: q.spotKey, hand: q.hand }])
+    expect(store().session).toEqual({ total: 1, correct: 0 })
+    // A click that lands after the time is up changes nothing.
+    answerRight()
+    expect(store().answer?.timedOut).toBe(true)
+    await new Promise((r) => setTimeout(r, 50))
+    expect((await repo.listAttempts(STARTER_ID))[0]).toMatchObject({ action: null, correct: false, timedOut: true })
+  })
+
+  it('an answer before the cards land counts as 0 ms', () => {
+    answerRight()
+    expect(store().answer?.answerMs).toBe(0)
   })
 })

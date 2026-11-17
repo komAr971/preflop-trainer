@@ -18,6 +18,8 @@ export function MistakeWhy({ compiled, hand, answer, threshold }: Props) {
   const { t } = useTranslation()
   const name = useActionName()
   const spot = compiled.spot
+  // Time ran out: nothing was chosen, the feedback already names the right action.
+  if (answer.action === null) return null
   const e = explainMistake(compiled, hand, answer.action, answer.accepted, {
     sizeWrong: answer.size?.ok === false,
     rng: answer.roll !== undefined,

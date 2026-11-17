@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dayKey, handErrors, spotStats, streakDays, todayCount, type AttemptLike } from './stats'
+import { dayKey, handErrors, medianDecisionMs, spotStats, streakDays, todayCount, type AttemptLike } from './stats'
 
 const at = (y: number, m: number, d: number, h = 12) => new Date(y, m - 1, d, h).getTime()
 const a = (spotKey: string, hand: string, correct: boolean, ts = 0): AttemptLike => ({ spotKey, hand, correct, ts })
@@ -12,7 +12,9 @@ describe('spotStats', () => {
       a('rfi:UTG', 'KK', true, 100),
     ]
     const s = spotStats(attempts, { window: 10, threshold: 0.9 })
-    expect(s.get('rfi:CO')).toEqual({ total: 15, correct: 10, recentTotal: 10, recentCorrect: 10, learned: true })
+    expect(s.get('rfi:CO')).toEqual({
+      total: 15, correct: 10, recentTotal: 10, recentCorrect: 10, learned: true, medianMs: null, timeouts: 0,
+    })
     expect(s.get('rfi:UTG')).toMatchObject({ total: 1, learned: false })
   })
 
@@ -64,5 +66,29 @@ describe('days', () => {
   it('breaks on a missed day', () => {
     expect(streakDays([at(2026, 11, 17), at(2026, 11, 19)], now, 1)).toBe(1)
     expect(streakDays([at(2026, 11, 17)], now, 1)).toBe(0)
+  })
+})
+
+describe('decision time', () => {
+  const t = (answerMs: number | undefined, extra: Partial<AttemptLike> = {}): AttemptLike => ({ ...a('rfi:CO', 'AA', true), answerMs, ...extra })
+
+  it('is the median answer time', () => {
+    expect(medianDecisionMs([t(3000), t(1000), t(2000)])).toBe(2000)
+    expect(medianDecisionMs([t(1000), t(2000), t(4000), t(9000)])).toBe(3000)
+  })
+
+  it('leaves out timeouts, answers over 60 s and old attempts without time', () => {
+    expect(medianDecisionMs([t(1000), t(10_000, { timedOut: true, correct: false }), t(61_000), t(undefined)])).toBe(1000)
+  })
+
+  it('is empty when nothing was timed', () => {
+    expect(medianDecisionMs([t(undefined)])).toBeNull()
+    expect(medianDecisionMs([])).toBeNull()
+  })
+
+  it('is shown per spot together with the timeout count', () => {
+    const s = spotStats([t(1000), t(3000), t(5000, { timedOut: true, correct: false }), t(undefined, { spotKey: 'rfi:BTN' })])
+    expect(s.get('rfi:CO')).toMatchObject({ medianMs: 2000, timeouts: 1 })
+    expect(s.get('rfi:BTN')).toMatchObject({ medianMs: null, timeouts: 0 })
   })
 })

@@ -31,9 +31,13 @@ export interface AttemptRecord {
   chartId: number
   spotKey: SpotKey
   hand: Hand
-  action: Action
+  /** null when the time ran out. */
+  action: Action | null
   correct: boolean
   ts: number
+  /** Decision time; missing in attempts saved before the timer existed. */
+  answerMs?: number
+  timedOut?: boolean
 }
 
 export interface ReviewRecord extends ReviewItem {

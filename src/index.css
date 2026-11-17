@@ -1162,3 +1162,32 @@ kbd {
     margin-left: auto;
   }
 }
+
+/* Decision timer under the hero's cards */
+.timer-track {
+  fill: rgb(0 0 0 / 0.35);
+}
+.timer-fill {
+  fill: #4cc38a;
+  transition: width 0.1s linear;
+}
+.timer-urgent .timer-fill {
+  fill: #e5534b;
+}
+.timer-pill {
+  fill: var(--seat);
+}
+.timer-text {
+  fill: var(--seat-text);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.timer-urgent .timer-text {
+  fill: #ff8a80;
+}
+.feedback-time {
+  font-weight: 400;
+  opacity: 0.8;
+  font-variant-numeric: tabular-nums;
+}

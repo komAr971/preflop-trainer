@@ -20,10 +20,10 @@ beforeEach(async () => {
   await act(() => useTrainer.getState().init(repo))
 })
 
-async function record(count: number, correct: boolean, spotKey = 'rfi:CO') {
+async function record(count: number, correct: boolean, spotKey = 'rfi:CO', extra: { answerMs?: number; timedOut?: boolean } = {}) {
   for (let i = 0; i < count; i++) {
     await repo.recordAttempt(
-      { chartId: STARTER_ID, spotKey, hand: 'K9o', action: 'fold', correct, ts: clock++ },
+      { chartId: STARTER_ID, spotKey, hand: 'K9o', action: extra.timedOut ? null : 'fold', correct, ts: clock++, ...extra },
       [],
       i,
     )
@@ -44,6 +44,20 @@ describe('StatsPage', () => {
     expect(row).toHaveTextContent('100%')
     expect(within(row).getByText('выучено')).toBeInTheDocument()
     expect(document.querySelector('[data-hand="K9o"]')).toHaveAttribute('title', 'K9o: 2/12')
+  })
+
+  it('shows the median decision time overall and per spot, with timeouts', async () => {
+    await record(1, true, 'rfi:CO', { answerMs: 1000 })
+    await record(1, true, 'rfi:CO', { answerMs: 3000 })
+    await record(1, false, 'rfi:CO', { timedOut: true, answerMs: 5000 })
+    await record(1, true, 'rfi:BTN')
+    render(<StatsPage />)
+    const card = await screen.findByTestId('stat-speed')
+    expect(card).toHaveTextContent('Время решения')
+    expect(card).toHaveTextContent('2.0 с')
+    expect(screen.getByTestId('spot-rfi:CO')).toHaveTextContent('2.0 с')
+    expect(screen.getByTestId('spot-rfi:CO')).toHaveTextContent('⏱1')
+    expect(screen.getByTestId('spot-rfi:BTN')).not.toHaveTextContent(' с')
   })
 })
 

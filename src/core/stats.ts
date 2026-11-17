@@ -6,6 +6,22 @@ export interface AttemptLike {
   hand: Hand
   correct: boolean
   ts: number
+  answerMs?: number
+  timedOut?: boolean
+}
+
+/** Answers slower than this are treated as distraction and left out of the median. */
+export const MAX_COUNTED_MS = 60_000
+
+/** Median decision time; timeouts, answers over 60 s and untimed attempts don't count. */
+export function medianDecisionMs(attempts: AttemptLike[]): number | null {
+  const times = attempts
+    .filter((x) => !x.timedOut && x.answerMs !== undefined && x.answerMs <= MAX_COUNTED_MS)
+    .map((x) => x.answerMs!)
+    .sort((x, y) => x - y)
+  if (times.length === 0) return null
+  const mid = times.length >> 1
+  return times.length % 2 ? times[mid] : (times[mid - 1] + times[mid]) / 2
 }
 
 export interface SpotStat {
@@ -16,6 +32,9 @@ export interface SpotStat {
   recentCorrect: number
   /** Window is full and its accuracy ≥ threshold. */
   learned: boolean
+  /** Median decision time, null when nothing was timed. */
+  medianMs: number | null
+  timeouts: number
 }
 
 export interface LearnedRule {
@@ -42,6 +61,8 @@ export function spotStats(attempts: AttemptLike[], rule: LearnedRule = DEFAULT_L
       recentTotal: recent.length,
       recentCorrect,
       learned: recent.length >= rule.window && recentCorrect / recent.length >= rule.threshold,
+      medianMs: medianDecisionMs(list),
+      timeouts: list.filter((x) => x.timedOut).length,
     })
   }
   return out

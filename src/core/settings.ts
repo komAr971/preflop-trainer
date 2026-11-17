@@ -21,9 +21,20 @@ export const settingsSchema = z.object({
   middleName: z.enum(['MP', 'HJ']).default('MP'),
   /** Individual sounds on/off. */
   soundKinds: z
-    .object({ deal: z.boolean(), chip: z.boolean(), correct: z.boolean(), wrong: z.boolean() })
-    .default({ deal: true, chip: true, correct: true, wrong: true }),
+    .object({
+      deal: z.boolean().default(true),
+      chip: z.boolean().default(true),
+      correct: z.boolean().default(true),
+      wrong: z.boolean().default(true),
+      /** Soft tick in the last seconds of the time limit. */
+      tick: z.boolean().default(true),
+    })
+    .default({ deal: true, chip: true, correct: true, wrong: true, tick: true }),
+  /** Seconds per decision; 0 = no limit. Time is measured either way. */
+  timeLimit: z.union([z.literal(0), z.literal(5), z.literal(10), z.literal(15), z.literal(30)]).default(0),
 })
+
+export const TIME_LIMITS = [0, 5, 10, 15, 30] as const
 
 export type Settings = z.infer<typeof settingsSchema>
 

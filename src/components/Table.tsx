@@ -5,8 +5,9 @@ import type { Scenario, SeatState } from '../core/scenario'
 import type { Card } from '../core/trainer'
 import { useMediaQuery } from '../ui/useMediaQuery'
 import { usePositionName } from './usePositionName'
-import { CARD_W } from './cardSize'
+import { CARD_H, CARD_W } from './cardSize'
 import { PlayingCard } from './PlayingCard'
+import type { TimerView } from './useDecisionTimer'
 import { LANDSCAPE, PORTRAIT, PORTRAIT_QUERY, heroCardsY, slotOf, type Layout } from './tableLayout'
 
 const STACK_BB = 100
@@ -73,9 +74,34 @@ interface Props {
   scenario: Scenario
   cards: [Card, Card]
   questionId: number
+  timer?: TimerView | null
 }
 
-export function Table({ scenario, cards, questionId }: Props) {
+/** Time bar in the gap between the hero's cards and seat, seconds to the right, like a poker client. */
+function TimerBar({ timer, x, y, width }: { timer: TimerView; x: number; y: number; width: number }) {
+  return (
+    <g
+      className={`timer${timer.urgent ? ' timer-urgent' : ''}`}
+      data-testid="timer"
+      data-seconds={timer.seconds}
+      data-urgent={timer.urgent}
+    >
+      {timer.fraction !== null && (
+        <>
+          <rect x={x} y={y} width={width} height={5} rx={2.5} className="timer-track" />
+          <rect x={x} y={y} width={width * timer.fraction} height={5} rx={2.5} className="timer-fill" />
+        </>
+      )}
+      {/* Seconds in a dark pill: readable on the felt and on the page background alike. */}
+      <rect x={x + width + 6} y={y - 7} width={28} height={19} rx={9.5} className="timer-pill" />
+      <text x={x + width + 20} y={y + 7.5} textAnchor="middle" className="timer-text">
+        {timer.seconds}
+      </text>
+    </g>
+  )
+}
+
+export function Table({ scenario, cards, questionId, timer }: Props) {
   const { t } = useTranslation()
   const layout = useMediaQuery(PORTRAIT_QUERY) ? PORTRAIT : LANDSCAPE
   const hero = scenario.spot.hero
@@ -121,6 +147,8 @@ export function Table({ scenario, cards, questionId }: Props) {
           </motion.g>
         </g>
       </AnimatePresence>
+
+      {timer && <TimerBar timer={timer} x={cx - cw - 4} y={cardsY + CARD_H * layout.cardScale + 1.5} width={2 * cw + 8} />}
     </svg>
   )
 }

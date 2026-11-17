@@ -24,7 +24,14 @@ export function Feedback({ answer, hand, freqs, spot, compiled, threshold = 0.25
   const ruleText = useSizeRuleText()
   return (
     <div className={`feedback ${answer.correct ? 'ok' : 'bad'}`} role="status">
-      <strong className="feedback-title">{answer.correct ? t('feedback.correct') : t('feedback.wrong')}</strong>
+      <strong className="feedback-title">
+        {answer.timedOut ? t('feedback.timeUp') : answer.correct ? t('feedback.correct') : t('feedback.wrong')}
+        {answer.answerMs !== undefined && !answer.timedOut && (
+          <span className="feedback-time" data-testid="answer-time">
+            {' '}· {t('stats.sec', { value: (answer.answerMs / 1000).toFixed(1) })}
+          </span>
+        )}
+      </strong>
       <span className="feedback-strategy">
         {t('feedback.strategy', { hand })}{' '}
         {ACTIONS.filter((a) => freqs[a] > 0)
@@ -51,7 +58,7 @@ export function Feedback({ answer, hand, freqs, spot, compiled, threshold = 0.25
       <button type="button" className="next" onClick={onNext} autoFocus>
         {t('feedback.next')} <kbd>{t('feedback.nextHint')}</kbd>
       </button>
-      {!answer.correct && compiled && (
+      {!answer.correct && answer.action !== null && compiled && (
         <MistakeWhy compiled={compiled} hand={hand} answer={answer} threshold={threshold} />
       )}
     </div>

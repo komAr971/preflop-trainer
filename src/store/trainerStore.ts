@@ -4,6 +4,7 @@ import type { Hand } from '../core/hands'
 import { dueItem, onAnswer, type ReviewItem } from '../core/review'
 import { buildScenario, type Scenario, type SizeRule } from '../core/scenario'
 import { actionForRoll, correctActions, dealCards, pickHand, rollD100, sizeMatches, type Card, type Rng } from '../core/trainer'
+import { elapsedMs, pauseClock, resumeClock, startClock, type Clock } from '../core/timer'
 import { DEFAULT_SETTINGS, type Settings } from '../core/settings'
 import { starterChart } from '../data/starterChart'
 import { STARTER_ID, type Repo } from '../db/repo'
@@ -22,8 +23,12 @@ export interface Question {
 }
 
 export interface AnswerResult {
-  action: Action
+  /** null when the time ran out. */
+  action: Action | null
   correct: boolean
+  /** Decision time, when the clock was running. */
+  answerMs?: number
+  timedOut?: boolean
   accepted: Action[]
   /** The roll that decided the answer (rng mode). */
   roll?: number
@@ -38,6 +43,9 @@ interface TrainerState {
   chartId: number
   chart: Chart
   rng: Rng
+  now: () => number
+  /** Decision clock of the current question; starts when the deal animation ends. */
+  clock: Clock | null
   settings: Settings
   /** Questions answered with this chart (drives the review queue). */
   counter: number
@@ -48,13 +56,19 @@ interface TrainerState {
   /** `sizeBb` — entered raise size, checked when size input is on. */
   submit: (action: Action, sizeBb?: number) => void
   next: () => void
+  startClock: () => void
+  /** Tab hidden / shown. */
+  pauseClock: () => void
+  resumeClock: () => void
+  /** The time limit ran out: a mistake, the hand goes to the review queue. */
+  timeUp: () => void
   /** Connects storage and loads the active chart with its progress. */
   init: (repo: Repo) => Promise<void>
   /** Switches training to another saved chart. */
   selectChart: (chartId: number) => Promise<void>
   updateSettings: (patch: Partial<Settings>) => void
   /** In-memory reset (tests). */
-  reset: (chart: Chart, rng?: Rng) => void
+  reset: (chart: Chart, rng?: Rng, now?: () => number) => void
 }
 
 function compile(file: unknown): Chart {
@@ -94,6 +108,10 @@ function makeQuestion(
   }
 }
 
+function acceptedActions(q: Question, settings: Settings): Action[] {
+  return settings.mixedMode === 'rng' ? [actionForRoll(q.freqs, q.roll)] : correctActions(q.freqs, settings.threshold)
+}
+
 const base = { chart: starter, rng: Math.random, settings: DEFAULT_SETTINGS, reviews: [], counter: 0 }
 
 export const useTrainer = create<TrainerState>()((set, get) => ({
@@ -101,17 +119,18 @@ export const useTrainer = create<TrainerState>()((set, get) => ({
   repo: null,
   chartId: STARTER_ID,
   ...base,
+  now: Date.now,
+  clock: null,
   question: makeQuestion(base, 0),
   answer: null,
   session: { total: 0, correct: 0 },
 
   submit: (action, sizeBb) => {
-    const { answer, question, settings, session, counter, reviews, repo, chartId } = get()
+    const { answer, question, settings, session, counter, reviews, repo, chartId, clock, now } = get()
     if (answer) return
-    const accepted =
-      settings.mixedMode === 'rng'
-        ? [actionForRoll(question.freqs, question.roll)]
-        : correctActions(question.freqs, settings.threshold)
+    const accepted = acceptedActions(question, settings)
+    // Answered while the cards were still flying in: the clock had not started yet.
+    const answerMs = clock ? elapsedMs(clock, now()) : 0
     const rule = question.scenario.actions.find((o) => o.action === 'raise')?.rule
     const size =
       action === 'raise' && rule && sizeBb !== undefined
@@ -121,14 +140,14 @@ export const useTrainer = create<TrainerState>()((set, get) => ({
     const nextCounter = counter + 1
     const nextReviews = onAnswer(reviews, question, correct, nextCounter)
     set({
-      answer: { action, correct, accepted, roll: settings.mixedMode === 'rng' ? question.roll : undefined, size },
+      answer: { action, correct, accepted, roll: settings.mixedMode === 'rng' ? question.roll : undefined, size, answerMs },
       session: { total: session.total + 1, correct: session.correct + (correct ? 1 : 0) },
       counter: nextCounter,
       reviews: nextReviews,
     })
     repo
       ?.recordAttempt(
-        { chartId, spotKey: question.spotKey, hand: question.hand, action, correct, ts: Date.now() },
+        { chartId, spotKey: question.spotKey, hand: question.hand, action, correct, ts: Date.now(), answerMs },
         nextReviews,
         nextCounter,
       )
@@ -137,7 +156,47 @@ export const useTrainer = create<TrainerState>()((set, get) => ({
 
   next: () => {
     const s = get()
-    set({ question: makeQuestion(s, s.question.id + 1), answer: null })
+    set({ question: makeQuestion(s, s.question.id + 1), answer: null, clock: null })
+  },
+
+  startClock: () => {
+    if (!get().answer) set({ clock: startClock(get().now()) })
+  },
+  pauseClock: () => {
+    const { clock, now } = get()
+    if (clock) set({ clock: pauseClock(clock, now()) })
+  },
+  resumeClock: () => {
+    const { clock, now } = get()
+    if (clock) set({ clock: resumeClock(clock, now()) })
+  },
+
+  timeUp: () => {
+    const { answer, question, settings, session, counter, reviews, repo, chartId } = get()
+    if (answer || settings.timeLimit === 0) return
+    const answerMs = settings.timeLimit * 1000
+    const nextCounter = counter + 1
+    const nextReviews = onAnswer(reviews, question, false, nextCounter)
+    set({
+      answer: {
+        action: null,
+        correct: false,
+        timedOut: true,
+        answerMs,
+        accepted: acceptedActions(question, settings),
+        roll: settings.mixedMode === 'rng' ? question.roll : undefined,
+      },
+      session: { total: session.total + 1, correct: session.correct },
+      counter: nextCounter,
+      reviews: nextReviews,
+    })
+    repo
+      ?.recordAttempt(
+        { chartId, spotKey: question.spotKey, hand: question.hand, action: null, correct: false, ts: Date.now(), answerMs, timedOut: true },
+        nextReviews,
+        nextCounter,
+      )
+      .catch((e) => console.error('Failed to save attempt', e))
   },
 
   init: async (repo) => {
@@ -171,7 +230,7 @@ export const useTrainer = create<TrainerState>()((set, get) => ({
     const { reviews, counter } = await repo.loadProgress(id)
     await repo.setActiveChartId(id)
     const s = { ...get(), chart, reviews, counter }
-    set({ chartId: id, chart, reviews, counter, question: makeQuestion(s, get().question.id + 1), answer: null })
+    set({ chartId: id, chart, reviews, counter, question: makeQuestion(s, get().question.id + 1), answer: null, clock: null })
   },
 
   updateSettings: (patch) => {
@@ -182,7 +241,7 @@ export const useTrainer = create<TrainerState>()((set, get) => ({
       .catch((e) => console.error('Failed to save settings', e))
   },
 
-  reset: (chart, rng = Math.random) => {
+  reset: (chart, rng = Math.random, now = Date.now) => {
     const s = { ...get(), chart, rng, reviews: [], counter: 0 }
     set({
       ready: true,
@@ -190,6 +249,8 @@ export const useTrainer = create<TrainerState>()((set, get) => ({
       chartId: STARTER_ID,
       chart,
       rng,
+      now,
+      clock: null,
       reviews: [],
       counter: 0,
       question: makeQuestion(s, 0),

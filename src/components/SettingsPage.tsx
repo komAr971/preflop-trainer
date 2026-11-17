@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { LANGUAGES, setLanguage } from '../i18n'
+import { TIME_LIMITS } from '../core/settings'
 import { useTrainer } from '../store/trainerStore'
 import { SOUND_KINDS, playSound } from '../ui/sound'
 import { NumberField } from './NumberField'
@@ -87,6 +88,17 @@ export function SettingsPage() {
 
       <section>
         <h2>{t('settings.training')}</h2>
+        <div className="setting">
+          <span>{t('settings.timeLimit')}</span>
+          <div className="lang" role="group" aria-label={t('settings.timeLimit')}>
+            {TIME_LIMITS.map((sec) => (
+              <button key={sec} type="button" aria-pressed={settings.timeLimit === sec} onClick={() => update({ timeLimit: sec })}>
+                {sec === 0 ? t('settings.timeLimitOff') : t('settings.timeLimitSec', { value: sec })}
+              </button>
+            ))}
+          </div>
+          <small>{t('settings.timeLimitHint')}</small>
+        </div>
         <div className="setting">
           <span>{t('settings.mixedMode')}</span>
           <div className="lang" role="group" aria-label={t('settings.mixedMode')}>

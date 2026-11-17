@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useDecisionTimer } from './useDecisionTimer'
 import { useTranslation } from 'react-i18next'
 import { ActionBar } from './ActionBar'
 import { HOTKEYS, needsSize } from './actionLabels'
@@ -34,6 +35,11 @@ export function TrainerPage() {
   const sound = (kind: SoundKind) => {
     if (settings.sound && settings.soundKinds[kind]) playSound(kind, settings.volume)
   }
+  const onTick = useCallback(() => {
+    const { sound: on, soundKinds, volume } = useTrainer.getState().settings
+    if (on && soundKinds.tick) playSound('tick', volume)
+  }, [])
+  const timer = useDecisionTimer(onTick)
   const spotText = useSpotText(question.scenario)
   const raiseOption = question.scenario.actions.find((o) => o.action === 'raise')
   const raiseNeedsSize = raiseOption !== undefined && needsSize(raiseOption, settings.sizeInput)
@@ -102,7 +108,7 @@ export function TrainerPage() {
               </span>
             )}
           </p>
-          <Table scenario={question.scenario} cards={question.cards} questionId={question.id} />
+          <Table scenario={question.scenario} cards={question.cards} questionId={question.id} timer={timer} />
           {/* Always present when sizes are typed, so the layout doesn't jump; inactive for all-ins. */}
           {settings.sizeInput && (
             <BetSizer
@@ -118,7 +124,7 @@ export function TrainerPage() {
             spot={question.scenario.spot}
             options={question.scenario.actions}
             disabled={answer !== null}
-            chosen={answer?.action}
+            chosen={answer?.action ?? undefined}
             accepted={answer?.accepted}
             onAction={act}
             raiseSize={raiseNeedsSize ? raiseSize : undefined}

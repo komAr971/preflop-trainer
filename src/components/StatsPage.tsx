@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { SpotKey } from '../core/chart'
 import { ALL_SPOTS } from '../core/chartEdit'
-import { handErrors, spotStats, streakDays, todayCount, type AttemptLike } from '../core/stats'
+import { dayKey, handErrors, medianDecisionMs, spotStats, streakDays, todayCount, type AttemptLike } from '../core/stats'
 import type { DrawingRecord } from '../db/repo'
 import { useTrainer } from '../store/trainerStore'
 import { HeatGrid } from './HeatGrid'
@@ -52,6 +52,9 @@ export function StatsPage() {
   const learned = spots.filter((s) => stats.get(s.key)?.learned).length
   const total = attempts.length
   const correct = attempts.filter((a) => a.correct).length
+  const sec = (ms: number | null) => (ms === null ? '—' : t('stats.sec', { value: (ms / 1000).toFixed(1) }))
+  const speedToday = medianDecisionMs(attempts.filter((a) => dayKey(a.ts) === dayKey(now)))
+  const speedAll = medianDecisionMs(attempts)
 
   return (
     <main className="stats">
@@ -80,6 +83,13 @@ export function StatsPage() {
           <span className="stat-label">{t('stats.accuracy')}</span>
           <span className="stat-value">{total ? `${pct(correct, total)}%` : '—'}</span>
           <span className="stat-sub">{t('stats.hands', { count: total })}</span>
+        </div>
+        <div className="stat-card" data-testid="stat-speed">
+          <span className="stat-label">{t('stats.speed')}</span>
+          <span className="stat-value">{sec(speedToday)}</span>
+          <span className="stat-sub">
+            {t('stats.speedToday')} · {t('stats.speedAll', { value: sec(speedAll) })}
+          </span>
         </div>
       </div>
 
@@ -119,6 +129,14 @@ export function StatsPage() {
                 </td>
                 <td className="num muted">
                   {st ? `${st.recentTotal}/${settings.learnedWindow}` : ''}
+                </td>
+                <td className="num muted" data-testid="spot-speed">
+                  {st && sec(st.medianMs)}
+                  {st && st.timeouts > 0 && (
+                    <span className="timeouts" title={t('stats.timeouts', { count: st.timeouts })}>
+                      {' '}⏱{st.timeouts}
+                    </span>
+                  )}
                 </td>
                 <td>{st?.learned && <span className="tag tag-active">{t('stats.learnedTag')}</span>}</td>
               </tr>

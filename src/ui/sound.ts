@@ -1,7 +1,7 @@
 /** Synthesized UI sounds (Web Audio): no files, works offline. Kept soft: no high pitches, smooth envelopes. */
-export type SoundKind = 'deal' | 'chip' | 'correct' | 'wrong'
+export type SoundKind = 'deal' | 'chip' | 'correct' | 'wrong' | 'tick'
 
-export const SOUND_KINDS: SoundKind[] = ['deal', 'chip', 'correct', 'wrong']
+export const SOUND_KINDS: SoundKind[] = ['deal', 'chip', 'correct', 'wrong', 'tick']
 
 let ctx: AudioContext | null = null
 
@@ -89,6 +89,10 @@ export function renderSound(ac: BaseAudioContext, destination: AudioNode, kind: 
     case 'correct':
       tone(ac, master, 587, t, { peak: 0.45, release: 0.25 })
       tone(ac, master, 880, t + 0.09, { peak: 0.4, release: 0.35 })
+      break
+    case 'tick':
+      // Quiet wooden click: one soft, low clack.
+      clack(ac, master, t, 1200, 0.5)
       break
     case 'wrong':
       tone(ac, master, 233, t, { peak: 0.5, release: 0.35, type: 'triangle', glideTo: 185 })
