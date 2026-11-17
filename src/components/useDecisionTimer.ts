@@ -14,6 +14,8 @@ export interface TimerView {
   fraction: number | null
   urgent: boolean
   running: boolean
+  /** Limit in seconds, 0 = off. */
+  limit: number
 }
 
 /**
@@ -76,12 +78,13 @@ export function useDecisionTimer(onTick: () => void): TimerView | null {
 
   if (!clock) return null
   const shownMs = answer?.answerMs ?? elapsedMs(clock, t)
-  if (limit === 0) return { seconds: Math.floor(shownMs / 1000), fraction: null, urgent: false, running }
+  if (limit === 0) return { seconds: Math.floor(shownMs / 1000), fraction: null, urgent: false, running, limit }
   const rest = answer ? Math.max(0, limit * 1000 - shownMs) : left!
   return {
     seconds: Math.ceil(rest / 1000),
     fraction: rest / (limit * 1000),
     urgent: rest <= URGENT_MS,
     running,
+    limit,
   }
 }

@@ -84,6 +84,7 @@ function TimerBar({ timer, x, y, width }: { timer: TimerView; x: number; y: numb
       className={`timer${timer.urgent ? ' timer-urgent' : ''}`}
       data-testid="timer"
       data-seconds={timer.seconds}
+      data-limit={timer.fraction === null ? 'off' : timer.limit}
       data-urgent={timer.urgent}
     >
       {timer.fraction !== null && (
